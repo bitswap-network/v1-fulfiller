@@ -8,16 +8,14 @@ const Tx = require("ethereumjs-tx").Transaction;
 const config = require("./config");
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
-const escrowWallet = web3.eth.accounts.privateKeyToAccount(
-  "0x" + config.SECRET
-);
-const getListings = async () => {
-  let listings = await Listing.find({
-    ongoing: true,
-    escrow: { full: true },
-  }).exec();
-  return listings;
-};
+const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
+// const getListings = async () => {
+//   let listings = await Listing.find({
+//     ongoing: true,
+//     escrow: { full: true },
+//   }).exec();
+//   return listings;
+// };
 
 const sendEth = async (
   ethereumaddress: string,
@@ -38,7 +36,7 @@ const sendEth = async (
   let tx = new Tx(rawTx, { chain: "mainnet" });
   tx.sign(web3.utils.hexToBytes("0x" + config.SECRET));
   let serializedTx = tx.serialize();
-  web3.eth
+  return web3.eth
     .sendSignedTransaction("0x" + serializedTx.toString("hex"))
     .then((hash) => {
       return hash;
@@ -48,17 +46,23 @@ const sendEth = async (
     });
 };
 
-const sendBitclout = async (bitcloutpubkey: string, amountnanos: number) => {
-  await proxy.initiateSendBitclout(20, bitcloutpubkey, amountnanos);
-  await proxy
+const sendBitclout = async (
+  bitcloutpubkey: string,
+  amountnanos: number,
+  txnfee: number
+) => {
+  await proxy.initiateSendBitclout(
+    20,
+    bitcloutpubkey,
+    amountnanos - amountnanos * txnfee
+  );
+  return proxy
     .sendBitclout()
     .then((response) => {
       console.log(response);
       proxy.close();
       if (JSON.parse(response).TransactionIDBase58Check) {
         return JSON.parse(response).TransactionIDBase58Check;
-      } else {
-        return "";
       }
     })
     .catch((error) => {
@@ -67,17 +71,18 @@ const sendBitclout = async (bitcloutpubkey: string, amountnanos: number) => {
     });
 };
 
-const fulfill = async () => {
-  let listings = await getListings();
+const fulfill = async (listing_id: string) => {
   let gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
   let nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
   );
-  if (listings.length > 0) {
-    for (let listing of listings) {
-      let buyer = await User.findOne({ _id: listing.buyer }).exec();
-      let seller = await User.findOne({ _id: listing.seller }).exec();
+  let listing = await Listing.findOne({ _id: listing_id }).exec();
+
+  if (listing) {
+    let buyer = await User.findOne({ _id: listing.buyer }).exec();
+    let seller = await User.findOne({ _id: listing.seller }).exec();
+    if (buyer && seller) {
       await sendEth(
         seller.ethereumaddress,
         listing.etheramount,
@@ -86,19 +91,21 @@ const fulfill = async () => {
         gas.data.average / 10
       )
         .then((hash) => {
-          listing.finalTransactionId = hash;
+          listing!.finalTransactionId = hash;
         })
         .catch((error) => {
           logger.error(error);
         });
-      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutamount)
+
+      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutamount, 0.04)
         .then((id) => {
-          listing.bitcloutTransactionId = id;
-          seller.bitswapbalance -= listing.bitcloutamount;
+          listing!.bitcloutTransactionId = id;
+          seller!.bitswapbalance -= listing!.bitcloutamount;
         })
         .catch((error) => {
           logger.error(error);
         });
+
       buyer.buys.push(listing._id);
       buyer.completedtransactions += 1;
       seller.completedtransactions += 1;
@@ -106,12 +113,21 @@ const fulfill = async () => {
       listing.ongoing = false;
       listing.completed = {
         status: true,
-        date: Date.now(),
+        date: new Date(),
       };
+
       await listing.save();
       await buyer.save();
       await seller.save();
+
+      return 1;
+    } else {
+      logger.error("Buyer/Seller not found");
+      throw Error("Buyer/Seller not found");
     }
+  } else {
+    logger.error("Listing not found");
+    throw Error("Listing not found");
   }
 };
 export default fulfill;

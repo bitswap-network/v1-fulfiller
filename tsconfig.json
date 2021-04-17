@@ -9,6 +9,7 @@
     "inlineSourceMap": true,
     "allowJs": true,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strictNullChecks": true
   }
 }
