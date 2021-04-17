@@ -33,7 +33,7 @@ const sendEth = async (
     gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString), "gwei"),
     nonce: web3.utils.toHex(nonce + 1),
   };
-  let tx = new Tx(rawTx, { chain: "mainnet" });
+  let tx = new Tx(rawTx, { chain: "kovan" });
   tx.sign(web3.utils.hexToBytes("0x" + config.SECRET));
   let serializedTx = tx.serialize();
   return web3.eth
