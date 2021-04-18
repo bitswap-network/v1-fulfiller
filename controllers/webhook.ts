@@ -39,22 +39,28 @@ webhookRouter.post("/escrow", async (req, res) => {
               listing.escrow.full = true;
               fulfill(listing._id);
             } else {
+              console.log("insufficient funds");
               res.status(400).send("insufficient funds");
             }
           } else {
+            console.log("no listing found");
             res.status(400).send("no associated listing");
           }
         } else {
+          console.log("buyer not found");
           res.status(400).send("buyer not found");
         }
       } else {
-        res.status(400).send("txn hash not valid");
+        console.log("txn type not valid");
+        res.status(400).send("txn type not valid");
       }
       // });
     } else {
+      console.log("invalid request");
       res.status(400).send("invalid request");
     }
   } else {
+    console.log("unauthorized request");
     res.status(400).send("unauthorized request");
   }
 });
