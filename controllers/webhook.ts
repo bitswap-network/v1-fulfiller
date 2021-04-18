@@ -1,10 +1,12 @@
 import User from "../models/user";
 import Listing from "../models/listing";
-import fulfill from "../utils/fulfiller";
+import Transaction from "../models/transaction";
+import { fulfill, sendBitclout } from "../utils/fulfiller";
 const Web3 = require("web3");
 const webhookRouter = require("express").Router();
 const config = require("../utils/config");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
+const { tokenAuthenticator } = require("../utils/middleware");
 
 webhookRouter.post("/escrow", async (req, res) => {
   if (req.body.activity) {
@@ -39,6 +41,24 @@ webhookRouter.post("/escrow", async (req, res) => {
     });
   } else {
     res.status(400).send("invalid request");
+  }
+});
+
+webhookRouter.post("/withdraw", async (req, res) => {
+  const { txn_id } = req.body;
+  let transaction = await Transaction.findOne({ _id: txn_id });
+  if (transaction) {
+    if (
+      transaction.transactiontype == "withdraw" &&
+      transaction.status == "pending"
+    ) {
+      sendBitclout(transaction.bitcloutpubkey, transaction.bitcloutnanos, 0);
+      res.sendStatus(200);
+    } else {
+      res.status(500).send("invalid txn");
+    }
+  } else {
+    res.status(500).send("txn not found");
   }
 });
 

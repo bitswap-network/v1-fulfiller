@@ -130,4 +130,4 @@ const fulfill = async (listing_id: string) => {
     throw Error("Listing not found");
   }
 };
-export default fulfill;
+export { fulfill, sendBitclout };
