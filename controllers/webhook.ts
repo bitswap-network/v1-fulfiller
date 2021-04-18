@@ -55,18 +55,20 @@ webhookRouter.post("/withdraw", async (req, res) => {
     ) {
       sendBitclout(transaction!.bitcloutpubkey, transaction!.bitcloutnanos, 0)
         .then((response) => {
+          // let resjson = JSON.parse(response);
           console.log(response);
-          let resjson = JSON.parse(response);
           user.bitswapbalance -= transaction.bitcloutnanos;
           transaction.status = "completed";
           transaction.completed = new Date();
-          transaction.tx_id = resjson["TransactionIDBase58Check"];
-          transaction!.save((err: any) => {
+          transaction.tx_id = response;
+          transaction.save((err: any) => {
             if (err) {
+              console.log(err);
               res.status(500).send("txn failed to save");
             } else {
-              user!.save((err: any) => {
+              user.save((err: any) => {
                 if (err) {
+                  console.log(err);
                   res.status(500).send("user failed to save");
                 } else {
                   res.sendStatus(200);
@@ -76,6 +78,7 @@ webhookRouter.post("/withdraw", async (req, res) => {
           });
         })
         .catch((error) => {
+          console.log("ERROR ", error);
           res.status(500).send(error);
         });
     } else {

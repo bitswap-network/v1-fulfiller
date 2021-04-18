@@ -53,7 +53,7 @@ const sendBitclout = async (
   return proxy
     .sendBitclout()
     .then((response) => {
-      console.log(response);
+      // console.log(response);
       proxy.close();
       if (JSON.parse(response).TransactionIDBase58Check) {
         return JSON.parse(response).TransactionIDBase58Check;
