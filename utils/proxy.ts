@@ -21,48 +21,6 @@ class Proxy {
     this.responseBody = "";
   }
 
-  async initiateProfileQuery(countsLimitsData: number, id: string) {
-    logger.info("initiating profile query!");
-    this.pageOptions = {
-      waitUntil: "networkidle2",
-      timeout: countsLimitsData * 1000,
-    };
-    puppeteerExtra.use(pluginStealth());
-    this.browser = await puppeteerExtra.launch({
-      headless: true,
-      args: ["--no-sandbox"],
-    });
-    this.page = await this.browser.newPage();
-    await this.page.setRequestInterception(true);
-    await this.page.setJavaScriptEnabled(true);
-    await this.page.setDefaultNavigationTimeout(0);
-    this.page.on("request", (request: any) => {
-      if (
-        ["image", "stylesheet", "font", "script"].indexOf(
-          request.resourceType()
-        ) !== -1
-      ) {
-        request.abort();
-      } else {
-        logger.info("posting data ....");
-        request.continue({
-          method: "POST",
-          postData: JSON.stringify({
-            PublicKeyBase58Check: id,
-          }),
-          headers: {
-            ...request.headers(),
-            "Content-Type": "application/json",
-          },
-        });
-      }
-    });
-    this.page.on("requestfailed", (request: any) => {
-      logger.info(request.url() + " " + request.failure().errorText);
-    });
-    this.isLinkCrawlTest = true;
-  }
-
   async initiateSendBitclout(
     countsLimitsData: number,
     id: string,
@@ -112,7 +70,7 @@ class Proxy {
           headers: {
             ...request.headers(),
             "Content-Type": "application/json",
-            cookie: `__cfduid=${config.CFDUID}; seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'14Jhq68xzi9vo5rg12fAsKjvgxWjE4e9Qd','IsTestnet':false}";`,
+            cookie: `__cfduid=${config.CFDUID}; seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'17rVoSGn2BvZuN71c26JtEnTQ9qS69GVXi','IsTestnet':false}"; amp_23345b=IZnxE8J6qapuI6J5moS5Jz.QkMxWUxnRGtTNTZQUnZIbm1lVzE0dThpN1BSeEduYjhER3ZjSllOcWV1eXFIZTdQdG1CcTY4cg==..1f3j3esr2.1f3j4q7k1.1qu.0.1qu; INGRESSCOOKIE=9411c35e7ef7b4ef3ceb9dd4bfe066b1`,
           },
         });
       }
