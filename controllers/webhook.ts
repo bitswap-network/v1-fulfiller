@@ -16,7 +16,8 @@ function isValidSignature(request) {
   const hmac = createHmac("sha256", token); // Create a HMAC SHA256 hash using the auth token
   // hmac.update(body, "utf8");
   const digest = hmac.digest("hex");
-  return signature === digest; // If signature equals your computed hash, return true
+  console.log(signature, digest);
+  return signature == digest; // If signature equals your computed hash, return true
 }
 webhookRouter.post("/escrow", async (req, res) => {
   if (isValidSignature(req)) {
