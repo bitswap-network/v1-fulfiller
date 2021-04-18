@@ -12,9 +12,9 @@ function isValidSignature(request) {
   const token = "MgB1ZnvEyupXi_7VRMT3wUOkfaKV0d1z";
   const headers = request.headers;
   const signature = headers["x-alchemy-signature"]; // Lowercase for NodeJS
-  // const body = request.body;
+  const body = request.body;
   const hmac = createHmac("sha256", token); // Create a HMAC SHA256 hash using the auth token
-  // hmac.update(body, "utf8");
+  hmac.update(JSON.stringify(body), "utf8");
   const digest = hmac.digest("hex");
   console.log(signature, digest);
   return signature == digest; // If signature equals your computed hash, return true
