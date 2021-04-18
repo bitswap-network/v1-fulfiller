@@ -67,6 +67,7 @@ const sendBitclout = async (
 
 const fulfill = async (listing_id: string) => {
   let gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
+  console.log(gas);
   let nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
