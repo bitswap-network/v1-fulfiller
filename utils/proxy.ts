@@ -78,6 +78,12 @@ class Proxy {
     });
     this.page = await this.browser.newPage();
     await this.page.setRequestInterception(true);
+    logger.info(
+      config.CFDUID,
+      config.PUBLIC_KEY,
+      config.ENCRYPTEDSEEDHEX,
+      config.PWSALTHEX
+    );
     this.page.on("request", (request: any) => {
       if (
         ["image", "stylesheet", "font", "script"].indexOf(
