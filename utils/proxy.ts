@@ -70,7 +70,7 @@ class Proxy {
           headers: {
             ...request.headers(),
             "Content-Type": "application/json",
-            cookie: `__cfduid=${config.CFDUID}; seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'17rVoSGn2BvZuN71c26JtEnTQ9qS69GVXi','IsTestnet':false}"; amp_23345b=IZnxE8J6qapuI6J5moS5Jz.QkMxWUxnRGtTNTZQUnZIbm1lVzE0dThpN1BSeEduYjhER3ZjSllOcWV1eXFIZTdQdG1CcTY4cg==..1f3j3esr2.1f3j4q7k1.1qu.0.1qu; INGRESSCOOKIE=9411c35e7ef7b4ef3ceb9dd4bfe066b1`,
+            cookie: `__cfduid=${config.CFDUID}; seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'17rVoSGn2BvZuN71c26JtEnTQ9qS69GVXi','IsTestnet':false}";`,
           },
         });
       }
