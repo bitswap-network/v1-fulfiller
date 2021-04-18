@@ -91,10 +91,10 @@ const fulfill = async (listing_id: string) => {
           logger.error(error);
         });
 
-      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutamount, 0.04)
+      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
         .then((id) => {
           listing!.bitcloutTransactionId = id;
-          seller!.bitswapbalance -= listing!.bitcloutamount;
+          seller!.bitswapbalance -= listing!.bitcloutnanos;
         })
         .catch((error) => {
           logger.error(error);
