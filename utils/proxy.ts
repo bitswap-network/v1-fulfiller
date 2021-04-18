@@ -175,6 +175,6 @@ class Proxy {
   }
 }
 
-const proxy = new Proxy();
+// const proxy = new Proxy();
 
-export default proxy;
+export default Proxy;

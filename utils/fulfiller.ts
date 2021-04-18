@@ -1,7 +1,7 @@
 import Listing from "../models/listing";
 import User from "../models/user";
 import axios from "axios";
-import proxy from "./proxy";
+import Proxy from "./proxy";
 
 const logger = require("./logger");
 const Tx = require("ethereumjs-tx").Transaction;
@@ -44,6 +44,7 @@ const sendBitclout = async (
   amountnanos: number,
   txnfee: number
 ) => {
+  let proxy = new Proxy();
   await proxy.initiateSendBitclout(
     20,
     bitcloutpubkey,

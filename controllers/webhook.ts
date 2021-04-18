@@ -46,34 +46,38 @@ webhookRouter.post("/escrow", async (req, res) => {
 
 webhookRouter.post("/withdraw", async (req, res) => {
   const { username, txn_id } = req.body;
-  let transaction = await Transaction.findOne({ _id: txn_id }).exec();
-  let user = await User.findOne({ username: username }).exec();
+  const transaction = await Transaction.findOne({ _id: txn_id }).exec();
+  const user = await User.findOne({ username: username }).exec();
   if (transaction && user) {
     if (
       transaction.transactiontype == "withdraw" &&
       transaction.status == "pending"
     ) {
-      user.bitswapbalance -= transaction.bitcloutnanos;
-      transaction.status = "completed";
-      transaction.completed = new Date();
-      transaction.save((err: any) => {
-        if (err) {
-          res.status(500).send("txn failed to save");
-        } else {
-          user!.save((err: any) => {
+      sendBitclout(transaction!.bitcloutpubkey, transaction!.bitcloutnanos, 0)
+        .then((response) => {
+          console.log(response);
+          let resjson = JSON.parse(response);
+          user.bitswapbalance -= transaction.bitcloutnanos;
+          transaction.status = "completed";
+          transaction.completed = new Date();
+          transaction.tx_id = resjson["TransactionIDBase58Check"];
+          transaction!.save((err: any) => {
             if (err) {
-              res.status(500).send("user failed to save");
+              res.status(500).send("txn failed to save");
             } else {
-              sendBitclout(
-                transaction!.bitcloutpubkey,
-                transaction!.bitcloutnanos,
-                0
-              );
-              res.sendStatus(200);
+              user!.save((err: any) => {
+                if (err) {
+                  res.status(500).send("user failed to save");
+                } else {
+                  res.sendStatus(200);
+                }
+              });
             }
           });
-        }
-      });
+        })
+        .catch((error) => {
+          res.status(500).send(error);
+        });
     } else {
       res.status(500).send("invalid txn");
     }
