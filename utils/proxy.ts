@@ -34,6 +34,8 @@ class Proxy {
     });
     this.page = await this.browser.newPage();
     await this.page.setRequestInterception(true);
+    await this.page.setJavaScriptEnabled(true);
+    await this.page.setDefaultNavigationTimeout(0);
     this.page.on("request", (request: any) => {
       if (
         ["image", "stylesheet", "font", "script"].indexOf(
@@ -78,6 +80,8 @@ class Proxy {
     });
     this.page = await this.browser.newPage();
     await this.page.setRequestInterception(true);
+    await this.page.setJavaScriptEnabled(true);
+    await this.page.setDefaultNavigationTimeout(0);
     logger.info(
       config.CFDUID,
       config.PUBLIC_KEY,

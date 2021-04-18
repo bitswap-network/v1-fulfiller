@@ -45,20 +45,40 @@ webhookRouter.post("/escrow", async (req, res) => {
 });
 
 webhookRouter.post("/withdraw", async (req, res) => {
-  const { txn_id } = req.body;
-  let transaction = await Transaction.findOne({ _id: txn_id });
-  if (transaction) {
+  const { username, txn_id } = req.body;
+  let transaction = await Transaction.findOne({ _id: txn_id }).exec();
+  let user = await User.findOne({ username: username }).exec();
+  if (transaction && user) {
     if (
       transaction.transactiontype == "withdraw" &&
       transaction.status == "pending"
     ) {
-      sendBitclout(transaction.bitcloutpubkey, transaction.bitcloutnanos, 0);
-      res.sendStatus(200);
+      user.bitswapbalance -= transaction.bitcloutnanos;
+      transaction.status = "completed";
+      transaction.completed = new Date();
+      transaction.save((err: any) => {
+        if (err) {
+          res.status(500).send("txn failed to save");
+        } else {
+          user!.save((err: any) => {
+            if (err) {
+              res.status(500).send("user failed to save");
+            } else {
+              sendBitclout(
+                transaction!.bitcloutpubkey,
+                transaction!.bitcloutnanos,
+                0
+              );
+              res.sendStatus(200);
+            }
+          });
+        }
+      });
     } else {
       res.status(500).send("invalid txn");
     }
   } else {
-    res.status(500).send("txn not found");
+    res.status(500).send("txn/user not found");
   }
 });
 
