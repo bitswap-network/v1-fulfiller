@@ -23,7 +23,7 @@ const sendEth = async (
       web3.utils.toWei((value - value * txnfee).toString(), "ether")
     ),
     gasLimit: web3.utils.toHex(21000),
-    gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString), "gwei"),
+    gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString()), "gwei"),
     nonce: web3.utils.toHex(nonce + 1),
   };
   let tx = new Tx(rawTx, { chain: "kovan" });

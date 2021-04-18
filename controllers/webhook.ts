@@ -39,7 +39,15 @@ webhookRouter.post("/escrow", async (req, res) => {
             if (value >= listing.etheramount) {
               listing.escrow.balance += value;
               listing.escrow.full = true;
-              fulfill(listing._id);
+              listing.save((err: any) => {
+                if (err) {
+                  console.log(err);
+                  res.status(500).send("error saving listing");
+                } else {
+                  fulfill(listing._id);
+                  res.sendStatus(200);
+                }
+              });
             } else {
               console.log("insufficient funds");
               res.status(400).send("insufficient funds");
