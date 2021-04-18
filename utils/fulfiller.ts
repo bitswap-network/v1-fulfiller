@@ -66,54 +66,55 @@ const sendBitclout = async (
 };
 
 const fulfill = async (listing_id: string) => {
-  let gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
-  console.log(gas);
-  let nonce = await web3.eth.getTransactionCount(
+  const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
+  // console.log(gas);
+  const nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
   );
-  let listing = await Listing.findOne({ _id: listing_id }).exec();
+  const listing = await Listing.findOne({ _id: listing_id }).exec();
 
   if (listing) {
-    let buyer = await User.findOne({ _id: listing.buyer }).exec();
-    let seller = await User.findOne({ _id: listing.seller }).exec();
+    const buyer = await User.findOne({ _id: listing.buyer }).exec();
+    const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      await sendEth(
-        seller.ethereumaddress,
-        listing.etheramount,
-        0.04,
-        nonce,
-        gas.data.average / 10
-      )
-        .then((hash) => {
-          listing!.finalTransactionId = hash;
-        })
-        .catch((error) => {
-          logger.error(error);
-        });
-
-      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
+      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
         .then((id) => {
-          listing!.bitcloutTransactionId = id;
-          seller!.bitswapbalance -= listing!.bitcloutnanos;
+          listing.bitcloutTransactionId = id;
+          seller.bitswapbalance -= listing.bitcloutnanos;
+          listing.bitcloutsent = true;
+          logger.info("bitclout sent");
+          sendEth(
+            seller.ethereumaddress,
+            listing.etheramount,
+            0.04,
+            nonce,
+            gas.data.average / 10
+          )
+            .then((hash) => {
+              listing.finalTransactionId = hash;
+              listing.escrowsent = true;
+              buyer.buys.push(listing._id);
+              buyer.completedtransactions += 1;
+              seller.completedtransactions += 1;
+              buyer.buystate = false;
+              listing.ongoing = false;
+              listing.completed = {
+                status: true,
+                date: new Date(),
+              };
+
+              listing.save();
+              buyer.save();
+              seller.save();
+            })
+            .catch((error) => {
+              logger.error(error);
+            });
         })
         .catch((error) => {
           logger.error(error);
         });
-
-      buyer.buys.push(listing._id);
-      buyer.completedtransactions += 1;
-      seller.completedtransactions += 1;
-      buyer.buystate = false;
-      listing.ongoing = false;
-      listing.completed = {
-        status: true,
-        date: new Date(),
-      };
-
-      await listing.save();
-      await buyer.save();
-      await seller.save();
 
       return 1;
     } else {
