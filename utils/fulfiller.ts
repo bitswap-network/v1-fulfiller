@@ -9,13 +9,6 @@ const config = require("./config");
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
-// const getListings = async () => {
-//   let listings = await Listing.find({
-//     ongoing: true,
-//     escrow: { full: true },
-//   }).exec();
-//   return listings;
-// };
 
 const sendEth = async (
   ethereumaddress: string,
@@ -130,4 +123,4 @@ const fulfill = async (listing_id: string) => {
     throw Error("Listing not found");
   }
 };
-export { fulfill, sendBitclout };
+export { fulfill, sendBitclout, sendEth };

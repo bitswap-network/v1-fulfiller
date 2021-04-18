@@ -95,15 +95,14 @@ class Proxy {
             Password: "",
             RecipientPublicKeyOrUsername: id,
             SeedInfo: null,
-            SenderPublicKeyBase58Check:
-              "BC1YLjQtaLyForGFpdzmvzCCx1zbSCm58785cABn5zS8KVMeS4Z4aNK",
+            SenderPublicKeyBase58Check: `${config.PUBLIC_KEY}`,
             Sign: true,
             Validate: true,
           }),
           headers: {
             ...request.headers(),
             "Content-Type": "application/json",
-            cookie: `seed_info_cookie_key-BC1YLjQtaLyForGFpdzmvzCCx1zbSCm58785cABn5zS8KVMeS4Z4aNK="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'14Jhq68xzi9vo5rg12fAsKjvgxWjE4e9Qd','IsTestnet':false}";`,
+            cookie: `seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'14Jhq68xzi9vo5rg12fAsKjvgxWjE4e9Qd','IsTestnet':false}";`,
           },
         });
       }
