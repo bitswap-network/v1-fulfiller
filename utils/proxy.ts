@@ -102,7 +102,7 @@ class Proxy {
           headers: {
             ...request.headers(),
             "Content-Type": "application/json",
-            cookie: `seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'14Jhq68xzi9vo5rg12fAsKjvgxWjE4e9Qd','IsTestnet':false}";`,
+            cookie: `__cfduid=${config.CFDUID}; seed_info_cookie_key-${config.PUBLIC_KEY}="{'HasPassword':false,'HasExtraText':false,'EncryptedSeedHex':'${config.ENCRYPTEDSEEDHEX}','PwSaltHex':'${config.PWSALTHEX}','Pbkdf2Iterations':10,'BtcDepositAddress':'14Jhq68xzi9vo5rg12fAsKjvgxWjE4e9Qd','IsTestnet':false}";`,
           },
         });
       }
