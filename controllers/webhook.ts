@@ -25,13 +25,14 @@ webhookRouter.post("/escrow", async (req, res) => {
       console.log(req.body.activity[0], fromAddress);
       const buyer = await User.findOne({
         ethereumaddress: fromAddress.toLowerCase(),
-      });
-      // web3.eth.getTransaction(hash).then(async (response) => {
+      }).exec();
+      console.log(buyer);
       if (asset == "ETH") {
         if (buyer) {
           const listing = await Listing.findOne({
             buyer: buyer._id,
           }).exec();
+          console.log(listing);
           if (listing) {
             if (value >= listing.etheramount) {
               listing.escrow.balance += value;
