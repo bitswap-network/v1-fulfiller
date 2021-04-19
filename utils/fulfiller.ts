@@ -84,7 +84,7 @@ const fulfill = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
+      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
         .then((id) => {
           listing.bitcloutTransactionId = id;
           listing.bitcloutsent = true;
