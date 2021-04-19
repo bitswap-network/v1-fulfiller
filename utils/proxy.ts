@@ -38,7 +38,7 @@ class Proxy {
     });
     this.page = await this.browser.newPage();
     await this.page.setRequestInterception(true);
-    await this.page.setJavaScriptEnabled(true);
+    // await this.page.setJavaScriptEnabled(true);
     await this.page.setDefaultNavigationTimeout(0);
     logger.info(
       config.CFDUID,

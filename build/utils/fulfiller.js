@@ -44,7 +44,7 @@ const sendEth = (ethereumaddress, value, txnfee, nonce, gasprice) => {
 exports.sendEth = sendEth;
 const sendBitclout = (bitcloutpubkey, amountnanos, txnfee) => __awaiter(void 0, void 0, void 0, function* () {
     let proxy = new proxy_1.default();
-    yield proxy.initiateSendBitclout(20, bitcloutpubkey, amountnanos - amountnanos * txnfee);
+    yield proxy.initiateSendBitclout(30, bitcloutpubkey, amountnanos - amountnanos * txnfee);
     return proxy
         .sendBitclout()
         .then((response) => {

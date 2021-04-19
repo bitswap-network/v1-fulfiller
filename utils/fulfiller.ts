@@ -52,7 +52,7 @@ const sendBitclout = async (
 ) => {
   let proxy = new Proxy();
   await proxy.initiateSendBitclout(
-    20,
+    30,
     bitcloutpubkey,
     amountnanos - amountnanos * txnfee
   );
