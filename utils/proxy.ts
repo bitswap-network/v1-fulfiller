@@ -54,10 +54,10 @@ class Proxy {
       config.ENCRYPTEDSEEDHEX,
       config.PWSALTHEX
     );
-    // await Promise.all([
-    //   this.page.waitForNavigation(),
-    //   this.page.click(`#recaptcha-demo-submit`)
-    // ])
+    await Promise.all([
+      this.page.waitForNavigation(),
+      this.page.click(`#recaptcha-demo-submit`),
+    ]);
     this.page.on("request", (request: any) => {
       if (
         ["image", "stylesheet", "font", "script"].indexOf(
