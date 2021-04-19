@@ -2,15 +2,21 @@ import Listing from "../models/listing";
 import User from "../models/user";
 import axios from "axios";
 import Proxy from "./proxy";
+import { response } from "express";
+const EthereumTx = require("ethereumjs-tx").Transaction;
 
 const logger = require("./logger");
-const Tx = require("ethereumjs-tx").Transaction;
+// const Tx = require("ethereumjs-tx").Transaction;
 const config = require("./config");
 const Web3 = require("web3");
-const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(
+    "https://eth-kovan.alchemyapi.io/v2/6LTFWvCzuUcuhZTbuX4N9wnHkS4dwbQQ"
+  )
+);
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
 
-const sendEth = async (
+const sendEth = (
   ethereumaddress: string,
   value: number,
   txnfee: number,
@@ -19,24 +25,24 @@ const sendEth = async (
 ) => {
   let rawTx = {
     to: ethereumaddress,
+    from: escrowWallet.address,
     value: web3.utils.toHex(
-      web3.utils.toWei((value - value * txnfee).toString(), "ether")
+      web3.utils.toWei((value - value * txnfee).toString())
     ),
     gasLimit: web3.utils.toHex(21000),
-    gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString()), "gwei"),
-    nonce: web3.utils.toHex(nonce + 1),
+    gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString(), "gwei")),
+    nonce: web3.utils.toHex(nonce),
   };
-  let tx = new Tx(rawTx, { chain: "kovan" });
-  tx.sign(web3.utils.hexToBytes("0x" + config.SECRET));
-  let serializedTx = tx.serialize();
-  return web3.eth
-    .sendSignedTransaction("0x" + serializedTx.toString("hex"))
-    .then((hash) => {
-      return hash;
-    })
-    .catch((error) => {
-      throw error;
-    });
+  console.log(rawTx, escrowWallet, gasprice, nonce);
+  const transaction = new EthereumTx(rawTx, {
+    chain: "kovan",
+  });
+  transaction.sign(web3.utils.hexToBytes(escrowWallet.privateKey));
+  const serializedTransaction = transaction.serialize();
+
+  return web3.eth.sendSignedTransaction(
+    "0x" + serializedTransaction.toString("hex")
+  );
 };
 
 const sendBitclout = async (
@@ -81,7 +87,6 @@ const fulfill = async (listing_id: string) => {
       sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
         .then((id) => {
           listing.bitcloutTransactionId = id;
-          seller.bitswapbalance -= listing.bitcloutnanos;
           listing.bitcloutsent = true;
           logger.info("bitclout sent");
           sendEth(
@@ -91,8 +96,8 @@ const fulfill = async (listing_id: string) => {
             nonce,
             gas.data.average / 10
           )
-            .then((hash) => {
-              listing.finalTransactionId = hash;
+            .then((result) => {
+              listing.finalTransactionId = result.transactionHash;
               listing.escrowsent = true;
               buyer.buys.push(listing._id);
               buyer.completedtransactions += 1;

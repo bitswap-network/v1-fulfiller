@@ -1,10 +1,15 @@
 import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
-import { fulfill, sendBitclout } from "../utils/fulfiller";
-const Web3 = require("web3");
-const webhookRouter = require("express").Router();
+import { fulfill, sendBitclout, sendEth } from "../utils/fulfiller";
+import axios from "axios";
 const config = require("../utils/config");
+const logger = require("../utils/logger");
+const Web3 = require("web3");
+const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
+const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
+const webhookRouter = require("express").Router();
+
 // const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 // const { tokenAuthenticator } = require("../utils/middleware");
 import { createHmac } from "crypto";
@@ -72,6 +77,91 @@ webhookRouter.post("/escrow", async (req, res) => {
   } else {
     console.log("unauthorized request");
     res.status(400).send("unauthorized request");
+  }
+});
+webhookRouter.post("/fulfillretry", async (req, res) => {
+  const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
+  const nonce = await web3.eth.getTransactionCount(
+    escrowWallet.address,
+    "pending"
+  );
+  const { listing_id } = req.body;
+  const listing = await Listing.findOne({
+    _id: listing_id,
+    ongoing: true,
+  }).exec();
+  if (listing) {
+    const buyer = await User.findOne({ _id: listing.buyer }).exec();
+    const seller = await User.findOne({ _id: listing.seller }).exec();
+    if (buyer && seller) {
+      if (listing.escrow.full && !listing.completed.status) {
+        if (!listing.escrowsent) {
+          await sendEth(
+            seller.ethereumaddress,
+            listing.etheramount,
+            0.04,
+            nonce,
+            gas.data.average / 10
+          )
+            .then((result) => {
+              console.log(result);
+              listing.finalTransactionId = result.transactionHash;
+              listing.escrowsent = true;
+              logger.info("escrow sent");
+              if (listing.bitcloutsent) {
+                buyer.buys.push(listing._id);
+                buyer.completedtransactions += 1;
+                seller.completedtransactions += 1;
+                buyer.buystate = false;
+                listing.ongoing = false;
+                listing.completed = {
+                  status: true,
+                  date: new Date(),
+                };
+                res.sendStatus(200);
+              }
+              listing.save();
+              buyer.save();
+              seller.save();
+            })
+            .catch((error) => {
+              res.status(500).send("could not fulfill $eth txn");
+              logger.error(error);
+            });
+        }
+        if (!listing.bitcloutsent) {
+          await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
+            .then((id) => {
+              listing.bitcloutTransactionId = id;
+              listing.bitcloutsent = true;
+              logger.info("bitclout sent");
+              if (listing.escrowsent) {
+                buyer.buys.push(listing._id);
+                buyer.completedtransactions += 1;
+                seller.completedtransactions += 1;
+                buyer.buystate = false;
+                listing.ongoing = false;
+                listing.completed = {
+                  status: true,
+                  date: new Date(),
+                };
+                res.sendStatus(200);
+              }
+              listing.save();
+              buyer.save();
+              seller.save();
+            })
+            .catch((error) => {
+              res.status(500).send("could not fulfill $btclt txn");
+              logger.error(error);
+            });
+        }
+      }
+    } else {
+      res.status(400).send("buyer or seller not found");
+    }
+  } else {
+    res.status(400).send("listing not found");
   }
 });
 

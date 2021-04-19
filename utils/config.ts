@@ -14,3 +14,4 @@ export let XAlchemyToken = process.env.XAlchemyToken;
 export let KEY = process.env.KEY;
 export let PUBLIC_KEY = process.env.PUBLIC_KEY;
 export let CFDUID = process.env.CFDUID;
+export let FROM = process.env.FROM;
