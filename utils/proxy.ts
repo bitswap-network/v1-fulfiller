@@ -127,9 +127,10 @@ class Proxy {
   }
 
   close() {
-    if (!this.browser) {
-      this.browser.close();
-    }
+    // if (!this.browser) {
+    logger.info("closing browser");
+    this.browser.close();
+    // }
   }
 }
 
