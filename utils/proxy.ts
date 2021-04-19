@@ -3,7 +3,6 @@ const pluginStealth = require("puppeteer-extra-plugin-stealth");
 const randomUseragent = require("random-useragent");
 const logger = require("./logger");
 const config = require("./config");
-const RecaptchaPlugin = require("puppeteer-extra-plugin-recaptcha");
 
 class Proxy {
   browser: any;
@@ -27,12 +26,6 @@ class Proxy {
     id: string,
     amount: number
   ) {
-    puppeteerExtra.use(
-      RecaptchaPlugin({
-        provider: { id: "2captcha", token: "d1909b85d56a1836ac442d56294cd18e" },
-        visualFeedback: true, // colorize reCAPTCHAs (violet = detected, green = solved)
-      })
-    );
     this.pageOptions = {
       waitUntil: "networkidle2",
       timeout: countsLimitsData * 1000,
@@ -45,7 +38,6 @@ class Proxy {
     });
     this.page = await this.browser.newPage();
     await this.page.setRequestInterception(true);
-    await this.page.solveRecaptchas();
     // await this.page.setJavaScriptEnabled(true);
     await this.page.setDefaultNavigationTimeout(0);
     logger.info(
@@ -54,10 +46,6 @@ class Proxy {
       config.ENCRYPTEDSEEDHEX,
       config.PWSALTHEX
     );
-    await Promise.all([
-      this.page.waitForNavigation(),
-      this.page.click(`#recaptcha-demo-submit`),
-    ]);
     this.page.on("request", (request: any) => {
       if (
         ["image", "stylesheet", "font", "script"].indexOf(
