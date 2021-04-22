@@ -11,7 +11,7 @@ const config = require("./config");
 const Web3 = require("web3");
 const web3 = new Web3(
   new Web3.providers.HttpProvider(
-    "https://eth-kovan.alchemyapi.io/v2/6LTFWvCzuUcuhZTbuX4N9wnHkS4dwbQQ"
+    "https://eth-mainnet.alchemyapi.io/v2/xhIIdjrFA63X5jKpLK2mm5ZLjgy-jQaH"
   )
 );
 
