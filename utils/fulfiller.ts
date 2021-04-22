@@ -9,11 +9,9 @@ const logger = require("./logger");
 // const Tx = require("ethereumjs-tx").Transaction;
 const config = require("./config");
 const Web3 = require("web3");
-const web3 = new Web3(
-  new Web3.providers.HttpProvider(
-    "https://eth-kovan.alchemyapi.io/v2/6LTFWvCzuUcuhZTbuX4N9wnHkS4dwbQQ"
-  )
-);
+const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
+
+const fee = 0;
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
 
 const sendEth = (
@@ -27,7 +25,9 @@ const sendEth = (
     to: ethereumaddress,
     from: escrowWallet.address,
     value: web3.utils.toHex(
-      web3.utils.toWei((value - value * txnfee).toString())
+      web3.utils.toWei(
+        (value - value * txnfee - (21000 * gasprice) / 1e9).toString()
+      )
     ),
     gasLimit: web3.utils.toHex(21000),
     gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString(), "gwei")),
@@ -35,7 +35,7 @@ const sendEth = (
   };
   console.log(rawTx, escrowWallet, gasprice, nonce);
   const transaction = new EthereumTx(rawTx, {
-    chain: "kovan",
+    chain: "mainnet",
   });
   transaction.sign(web3.utils.hexToBytes(escrowWallet.privateKey));
   const serializedTransaction = transaction.serialize();
@@ -52,7 +52,7 @@ const sendBitclout = async (
 ) => {
   let proxy = new Proxy();
   await proxy.initiateSendBitclout(
-    20,
+    30,
     bitcloutpubkey,
     amountnanos - amountnanos * txnfee
   );
@@ -84,7 +84,7 @@ const fulfill = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
+      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
         .then((id) => {
           listing.bitcloutTransactionId = id;
           listing.bitcloutsent = true;
@@ -92,14 +92,14 @@ const fulfill = async (listing_id: string) => {
           sendEth(
             seller.ethereumaddress,
             listing.etheramount,
-            0.04,
+            fee,
             nonce,
             gas.data.average / 10
           )
             .then((result) => {
               listing.finalTransactionId = result.transactionHash;
               listing.escrowsent = true;
-              buyer.buys.push(listing._id);
+              // buyer.buys.push(listing._id);
               buyer.completedtransactions += 1;
               seller.completedtransactions += 1;
               buyer.buystate = false;

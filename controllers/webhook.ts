@@ -25,59 +25,59 @@ function isValidSignature(request) {
   return signature == digest; // If signature equals your computed hash, return true
 }
 webhookRouter.post("/escrow", async (req, res) => {
-  if (isValidSignature(req)) {
-    if (req.body.activity) {
-      const { fromAddress, value, asset, hash } = req.body.activity[0];
-      console.log(req.body.activity[0], fromAddress);
-      const buyer = await User.findOne({
-        ethereumaddress: fromAddress.toLowerCase(),
-      }).exec();
-      console.log(buyer);
-      if (asset == "ETH") {
-        if (buyer) {
-          const listing = await Listing.findOne({
-            buyer: buyer._id,
-            ongoing: true,
-          }).exec();
-          console.log(listing);
-          if (listing && !listing.completed.status) {
-            if (value >= listing.etheramount) {
-              listing.escrow.balance += value;
-              listing.escrow.full = true;
-              listing.save((err: any) => {
-                if (err) {
-                  console.log(err);
-                  res.status(500).send("error saving listing");
-                } else {
-                  fulfill(listing._id);
-                  res.sendStatus(200);
-                }
-              });
-            } else {
-              console.log("insufficient funds");
-              res.status(400).send("insufficient funds");
-            }
+  // if (isValidSignature(req)) {
+  if (req.body.activity) {
+    const { fromAddress, value, asset, hash } = req.body.activity[0];
+    console.log(req.body.activity[0], fromAddress);
+    const buyer = await User.findOne({
+      ethereumaddress: fromAddress.toLowerCase(),
+    }).exec();
+    console.log(buyer);
+    if (asset == "ETH") {
+      if (buyer) {
+        const listing = await Listing.findOne({
+          buyer: buyer._id,
+          ongoing: true,
+        }).exec();
+        console.log(listing);
+        if (listing && !listing.completed.status) {
+          if (value >= listing.etheramount) {
+            listing.escrow.balance += value;
+            listing.escrow.full = true;
+            listing.save((err: any) => {
+              if (err) {
+                console.log(err);
+                res.status(500).send("error saving listing");
+              } else {
+                fulfill(listing._id);
+                res.sendStatus(200);
+              }
+            });
           } else {
-            console.log("no listing found");
-            res.status(400).send("no associated listing");
+            console.log("insufficient funds");
+            res.status(400).send("insufficient funds");
           }
         } else {
-          console.log("buyer not found");
-          res.status(400).send("buyer not found");
+          console.log("no listing found");
+          res.status(400).send("no associated listing");
         }
       } else {
-        console.log("txn type not valid");
-        res.status(400).send("txn type not valid");
+        console.log("buyer not found");
+        res.status(400).send("buyer not found");
       }
-      // });
     } else {
-      console.log("invalid request");
-      res.status(400).send("invalid request");
+      console.log("txn type not valid");
+      res.status(400).send("txn type not valid");
     }
+    // });
   } else {
-    console.log("unauthorized request");
-    res.status(400).send("unauthorized request");
+    console.log("invalid request");
+    res.status(400).send("invalid request");
   }
+  // } else {
+  //   console.log("unauthorized request");
+  //   res.status(400).send("unauthorized request");
+  // }
 });
 webhookRouter.post("/fulfillretry", async (req, res) => {
   const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
@@ -99,7 +99,7 @@ webhookRouter.post("/fulfillretry", async (req, res) => {
           await sendEth(
             seller.ethereumaddress,
             listing.etheramount,
-            0.04,
+            0,
             nonce,
             gas.data.average / 10
           )
