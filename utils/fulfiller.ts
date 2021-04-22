@@ -9,11 +9,7 @@ const logger = require("./logger");
 // const Tx = require("ethereumjs-tx").Transaction;
 const config = require("./config");
 const Web3 = require("web3");
-const web3 = new Web3(
-  new Web3.providers.HttpProvider(
-    "https://eth-mainnet.alchemyapi.io/v2/xhIIdjrFA63X5jKpLK2mm5ZLjgy-jQaH"
-  )
-);
+const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 
 const fee = 0;
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
