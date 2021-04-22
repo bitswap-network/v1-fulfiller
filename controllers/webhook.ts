@@ -99,7 +99,7 @@ webhookRouter.post("/fulfillretry", async (req, res) => {
           await sendEth(
             seller.ethereumaddress,
             listing.etheramount,
-            0.04,
+            0,
             nonce,
             gas.data.average / 10
           )

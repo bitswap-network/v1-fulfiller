@@ -14,6 +14,8 @@ const web3 = new Web3(
     "https://eth-kovan.alchemyapi.io/v2/6LTFWvCzuUcuhZTbuX4N9wnHkS4dwbQQ"
   )
 );
+
+const fee = 0;
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
 
 const sendEth = (
@@ -27,7 +29,9 @@ const sendEth = (
     to: ethereumaddress,
     from: escrowWallet.address,
     value: web3.utils.toHex(
-      web3.utils.toWei((value - value * txnfee).toString())
+      web3.utils.toWei(
+        (value - value * txnfee - (21000 * gasprice) / 1e9).toString()
+      )
     ),
     gasLimit: web3.utils.toHex(21000),
     gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString(), "gwei")),
@@ -84,7 +88,7 @@ const fulfill = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
+      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
         .then((id) => {
           listing.bitcloutTransactionId = id;
           listing.bitcloutsent = true;
@@ -92,7 +96,7 @@ const fulfill = async (listing_id: string) => {
           sendEth(
             seller.ethereumaddress,
             listing.etheramount,
-            0.04,
+            fee,
             nonce,
             gas.data.average / 10
           )
