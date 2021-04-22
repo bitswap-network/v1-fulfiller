@@ -103,7 +103,7 @@ const fulfill = async (listing_id: string) => {
             .then((result) => {
               listing.finalTransactionId = result.transactionHash;
               listing.escrowsent = true;
-              buyer.buys.push(listing._id);
+              // buyer.buys.push(listing._id);
               buyer.completedtransactions += 1;
               seller.completedtransactions += 1;
               buyer.buystate = false;
