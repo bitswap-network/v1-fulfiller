@@ -26,14 +26,15 @@ app.use(cors());
 app.use(helmet()); //security
 app.use(express.json());
 app.use(middleware.requestLogger);
-app.use(middleware.errorHandler);
 
 // API Routes Here
 app.get("/", (req, res) => {
   res.status(200).send(`BitSwap Fulfillment API`);
 });
 
-app.use(middleware.errorHandler);
 app.use("/webhook", webhookRouter);
+
+app.use(middleware.errorHandler);
+
 
 export default app;
