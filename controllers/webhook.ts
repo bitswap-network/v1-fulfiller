@@ -1,7 +1,12 @@
 import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
-import { fulfill, sendBitclout, sendEth } from "../utils/fulfiller";
+import {
+  fulfill,
+  sendBitclout,
+  sendEth,
+  submitTransaction,
+} from "../utils/fulfiller";
 import axios from "axios";
 const config = require("../utils/config");
 const logger = require("../utils/logger");
@@ -131,8 +136,8 @@ webhookRouter.post("/fulfillretry", async (req, res) => {
         }
         if (!listing.bitcloutsent) {
           await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0.04)
-            .then((id) => {
-              listing.bitcloutTransactionId = id;
+            .then((response) => {
+              listing.bitcloutTransactionId = response.data.TxnHashHex;
               listing.bitcloutsent = true;
               logger.info("bitclout sent");
               if (listing.escrowsent) {
@@ -176,27 +181,34 @@ webhookRouter.post("/withdraw", async (req, res) => {
     ) {
       sendBitclout(transaction.bitcloutpubkey, transaction.bitcloutnanos, 0)
         .then((response) => {
-          // let resjson = JSON.parse(response);
           console.log(response);
-          user.bitswapbalance -= transaction.bitcloutnanos;
-          transaction.status = "completed";
-          transaction.completed = new Date();
-          transaction.tx_id = response;
-          transaction.save((err: any) => {
-            if (err) {
-              console.log(err);
-              res.status(500).send("txn failed to save");
-            } else {
-              user.save((err: any) => {
+          submitTransaction(response.data.TransactionHex)
+            .then((txnresponse) => {
+              console.log(txnresponse);
+              user.bitswapbalance -= transaction.bitcloutnanos / 1e9;
+              transaction.status = "completed";
+              transaction.completed = new Date();
+              transaction.tx_id = txnresponse.data.TxnHashHex;
+              transaction.save((err: any) => {
                 if (err) {
                   console.log(err);
-                  res.status(500).send("user failed to save");
+                  res.status(500).send("txn failed to save");
                 } else {
-                  res.sendStatus(200);
+                  user.save((err: any) => {
+                    if (err) {
+                      console.log(err);
+                      res.status(500).send("user failed to save");
+                    } else {
+                      res.sendStatus(200);
+                    }
+                  });
                 }
               });
-            }
-          });
+            })
+            .catch((error) => {
+              console.log("ERROR ", error);
+              res.status(500).send(error);
+            });
         })
         .catch((error) => {
           console.log("ERROR ", error);

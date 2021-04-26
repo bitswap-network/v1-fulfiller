@@ -3,16 +3,17 @@ import User from "../models/user";
 import axios from "axios";
 import Proxy from "./proxy";
 import { response } from "express";
+import { handleSign } from "./identity";
 const EthereumTx = require("ethereumjs-tx").Transaction;
 
 const logger = require("./logger");
-// const Tx = require("ethereumjs-tx").Transaction;
-const config = require("./config");
+import * as config from "./config";
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
-
 const fee = 0;
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
+
+console.log(config);
 
 const sendEth = (
   ethereumaddress: string,
@@ -45,30 +46,49 @@ const sendEth = (
   );
 };
 
-const sendBitclout = async (
+const sendBitclout = (
   bitcloutpubkey: string,
   amountnanos: number,
   txnfee: number
 ) => {
-  let proxy = new Proxy();
-  await proxy.initiateSendBitclout(
-    30,
-    bitcloutpubkey,
-    amountnanos - amountnanos * txnfee
+  console.log("sending bclt");
+
+  return axios.post(
+    "https://api.bitclout.com/send-bitclout",
+    JSON.stringify({
+      AmountNanos: amountnanos,
+      MinFeeRateNanosPerKB: 1000,
+      RecipientPublicKeyOrUsername: bitcloutpubkey,
+      SenderPublicKeyBase58Check: config.PUBLIC_KEY,
+    }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Cookie:
+          "__cfduid=d0e96960ab7b9233d869e566cddde2b311619467183; INGRESSCOOKIE=e663da5b29ea8969365c1794da20771c",
+      },
+    }
   );
-  return proxy
-    .sendBitclout()
-    .then((response) => {
-      // console.log(response);
-      proxy.close();
-      if (JSON.parse(response).TransactionIDBase58Check) {
-        return JSON.parse(response).TransactionIDBase58Check;
-      }
-    })
-    .catch((error) => {
-      proxy.close();
-      throw error;
-    });
+};
+const submitTransaction = async (txnhex: string) => {
+  const signedTxn = handleSign({
+    encryptedSeedHex: config.ENCRYPTEDSEEDHEX,
+    transactionHex: txnhex,
+  });
+  console.log("submitting txn");
+  return axios.post(
+    "https://api.bitclout.com/submit-transaction",
+    JSON.stringify({
+      TransactionHex: signedTxn.signedTransactionHex,
+    }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Cookie:
+          "__cfduid=d0e96960ab7b9233d869e566cddde2b311619467183; INGRESSCOOKIE=e663da5b29ea8969365c1794da20771c",
+      },
+    }
+  );
 };
 
 const fulfill = async (listing_id: string) => {
@@ -85,8 +105,8 @@ const fulfill = async (listing_id: string) => {
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
       await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
-        .then((id) => {
-          listing.bitcloutTransactionId = id;
+        .then((response) => {
+          listing.bitcloutTransactionId = response.data.TxnHashHex;
           listing.bitcloutsent = true;
           logger.info("bitclout sent");
           sendEth(
@@ -131,4 +151,4 @@ const fulfill = async (listing_id: string) => {
     throw Error("Listing not found");
   }
 };
-export { fulfill, sendBitclout, sendEth };
+export { fulfill, sendBitclout, sendEth, submitTransaction };
