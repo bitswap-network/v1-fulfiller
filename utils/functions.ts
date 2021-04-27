@@ -60,4 +60,60 @@ const processListing = async (fromAddress, value, asset) => {
   }
 };
 
-const markListingAsCompleted = (value) => {};
+const markListingAsCompleted = async (toAddress, hash, asset) => {
+  const listing = await Listing.findOne({
+    ongoing: true,
+    finalTransactionId: hash.toLowerCase(),
+  }).exec();
+  const buyer = await User.findOne({
+    ethereumaddress: toAddress.toLowerCase(),
+  }).exec();
+
+  if (listing && buyer) {
+    const seller = await User.findById(listing.seller).exec();
+    if (asset == "ETH" && seller) {
+      listing.escrowsent = true;
+      buyer.buys.push(listing._id);
+      buyer.completedtransactions += 1;
+      seller.completedtransactions += 1;
+      buyer.buystate = false;
+      listing.ongoing = false;
+      listing.completed = {
+        status: true,
+        date: new Date(),
+      };
+      listing.save((err: any) => {
+        if (err) {
+          throw 500;
+        } else {
+          try {
+            buyer.save((err: any) => {
+              if (err) {
+                throw 500;
+              } else {
+                try {
+                  seller.save((err: any) => {
+                    if (err) {
+                      throw 500;
+                    } else {
+                      return "Listing completed";
+                    }
+                  });
+                } catch (error) {
+                  throw 500;
+                }
+              }
+            });
+          } catch (error) {
+            throw 500;
+          }
+        }
+      });
+    } else {
+      throw 400;
+    }
+  } else {
+    throw 404;
+  }
+};
+export { processListing, markListingAsCompleted };

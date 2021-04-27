@@ -7,10 +7,7 @@ import {
   sendEth,
   submitTransaction,
 } from "../utils/fulfiller";
-const {
-  processListing,
-  markListingAsCompleted,
-} = require("../utils/functions");
+import { processListing, markListingAsCompleted } from "../utils/functions";
 import axios from "axios";
 import * as config from "../utils/config";
 const logger = require("../utils/logger");
@@ -36,12 +33,12 @@ function isValidSignature(request) {
 
 webhookRouter.post("/escrow", async (req, res) => {
   if (isValidSignature(req)) {
-    const { fromAddress, value, asset, hash } = req.body.activity[0];
+    const { fromAddress, toAddress, value, asset, hash } = req.body.activity[0];
 
     // If the transaction is sent to the wallet
     if (fromAddress.toLowerCase() === escrowWallet.address.toLowerCase()) {
       try {
-        await markListingAsCompleted(value);
+        await markListingAsCompleted(toAddress, hash, asset);
       } catch (error) {
         res.sendStatus(error.message);
       }

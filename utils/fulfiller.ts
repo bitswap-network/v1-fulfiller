@@ -119,7 +119,7 @@ const process = async (listing_id: string) => {
                 gas.data.average / 10
               )
                 .then((result) => {
-                  listing.finalTransactionId = result.transactionHash;
+                  listing.finalTransactionId = result.transactionHash.toLowerCase();
                   // listing.escrowsent = true;
                   // buyer.buys.push(listing._id);
                   // buyer.completedtransactions += 1;
