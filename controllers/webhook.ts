@@ -2,13 +2,17 @@ import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
 import {
-  fulfill,
+  process,
   sendBitclout,
   sendEth,
   submitTransaction,
 } from "../utils/fulfiller";
+const {
+  processListing,
+  markListingAsCompleted,
+} = require("../utils/functions");
 import axios from "axios";
-const config = require("../utils/config");
+import * as config from "../utils/config";
 const logger = require("../utils/logger");
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
@@ -19,71 +23,39 @@ const webhookRouter = require("express").Router();
 // const { tokenAuthenticator } = require("../utils/middleware");
 import { createHmac } from "crypto";
 function isValidSignature(request) {
-  const token = "MgB1ZnvEyupXi_7VRMT3wUOkfaKV0d1z";
+  const token = config.AlchemyAuth ? config.AlchemyAuth : "";
   const headers = request.headers;
   const signature = headers["x-alchemy-signature"]; // Lowercase for NodeJS
   const body = request.body;
   const hmac = createHmac("sha256", token); // Create a HMAC SHA256 hash using the auth token
   hmac.update(JSON.stringify(body), "utf8");
   const digest = hmac.digest("hex");
-  console.log(signature, digest);
-  return signature == digest; // If signature equals your computed hash, return true
+  console.log("sigdig: ", signature, digest);
+  return signature === digest; // If signature equals your computed hash, return true
 }
+
 webhookRouter.post("/escrow", async (req, res) => {
-  // if (isValidSignature(req)) {
-  if (req.body.activity) {
+  if (isValidSignature(req)) {
     const { fromAddress, value, asset, hash } = req.body.activity[0];
-    console.log(req.body.activity[0], fromAddress);
-    const buyer = await User.findOne({
-      ethereumaddress: fromAddress.toLowerCase(),
-    }).exec();
-    console.log(buyer);
-    if (asset == "ETH") {
-      if (buyer) {
-        const listing = await Listing.findOne({
-          buyer: buyer._id,
-          ongoing: true,
-        }).exec();
-        console.log(listing);
-        if (listing && !listing.completed.status) {
-          if (value >= listing.etheramount) {
-            listing.escrow.balance += value;
-            listing.escrow.full = true;
-            listing.save((err: any) => {
-              if (err) {
-                console.log(err);
-                res.status(500).send("error saving listing");
-              } else {
-                fulfill(listing._id);
-                res.sendStatus(200);
-              }
-            });
-          } else {
-            console.log("insufficient funds");
-            res.status(400).send("insufficient funds");
-          }
-        } else {
-          console.log("no listing found");
-          res.status(400).send("no associated listing");
-        }
-      } else {
-        console.log("buyer not found");
-        res.status(400).send("buyer not found");
+
+    // If the transaction is sent to the wallet
+    if (fromAddress.toLowerCase() === escrowWallet.address.toLowerCase()) {
+      try {
+        await markListingAsCompleted(value);
+      } catch (error) {
+        res.sendStatus(error.message);
       }
     } else {
-      console.log("txn type not valid");
-      res.status(400).send("txn type not valid");
+      try {
+        await processListing(fromAddress, value, asset);
+        res.sendStatus(204);
+      } catch (error) {
+        res.sendStatus(error.message);
+      }
     }
-    // });
-  } else {
-    console.log("invalid request");
-    res.status(400).send("invalid request");
   }
-  // } else {
-  //   console.log("unauthorized request");
-  //   res.status(400).send("unauthorized request");
-  // }
 });
+
 webhookRouter.post("/fulfillretry", async (req, res) => {
   const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
   const nonce = await web3.eth.getTransactionCount(

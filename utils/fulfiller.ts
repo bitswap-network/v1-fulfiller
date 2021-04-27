@@ -1,7 +1,6 @@
 import Listing from "../models/listing";
 import User from "../models/user";
 import axios from "axios";
-import Proxy from "./proxy";
 import { response } from "express";
 import { handleSign } from "./identity";
 const EthereumTx = require("ethereumjs-tx").Transaction;
@@ -75,6 +74,7 @@ const submitTransaction = async (txnhex: string) => {
     encryptedSeedHex: config.ENCRYPTEDSEEDHEX,
     transactionHex: txnhex,
   });
+
   console.log("submitting txn");
   return axios.post(
     "https://api.bitclout.com/submit-transaction",
@@ -91,7 +91,7 @@ const submitTransaction = async (txnhex: string) => {
   );
 };
 
-const fulfill = async (listing_id: string) => {
+const process = async (listing_id: string) => {
   const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
   // console.log(gas);
   const nonce = await web3.eth.getTransactionCount(
@@ -104,34 +104,40 @@ const fulfill = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      await sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
+      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
         .then((response) => {
-          listing.bitcloutTransactionId = response.data.TxnHashHex;
-          listing.bitcloutsent = true;
-          logger.info("bitclout sent");
-          sendEth(
-            seller.ethereumaddress,
-            listing.etheramount,
-            fee,
-            nonce,
-            gas.data.average / 10
-          )
-            .then((result) => {
-              listing.finalTransactionId = result.transactionHash;
-              listing.escrowsent = true;
-              // buyer.buys.push(listing._id);
-              buyer.completedtransactions += 1;
-              seller.completedtransactions += 1;
-              buyer.buystate = false;
-              listing.ongoing = false;
-              listing.completed = {
-                status: true,
-                date: new Date(),
-              };
+          submitTransaction(response.data.TransactionHex)
+            .then((txnresponse) => {
+              listing.bitcloutTransactionId = txnresponse.data.TxnHashHex;
+              listing.bitcloutsent = true;
+              logger.info("bitclout sent");
+              sendEth(
+                seller.ethereumaddress,
+                listing.etheramount,
+                fee,
+                nonce,
+                gas.data.average / 10
+              )
+                .then((result) => {
+                  listing.finalTransactionId = result.transactionHash;
+                  // listing.escrowsent = true;
+                  // buyer.buys.push(listing._id);
+                  // buyer.completedtransactions += 1;
+                  // seller.completedtransactions += 1;
+                  // buyer.buystate = false;
+                  // listing.ongoing = false;
+                  // listing.completed = {
+                  //   status: true,
+                  //   date: new Date(),
+                  // };
 
-              listing.save();
-              buyer.save();
-              seller.save();
+                  listing.save();
+                  // buyer.save();
+                  // seller.save();
+                })
+                .catch((error) => {
+                  logger.error(error);
+                });
             })
             .catch((error) => {
               logger.error(error);
@@ -151,4 +157,4 @@ const fulfill = async (listing_id: string) => {
     throw Error("Listing not found");
   }
 };
-export { fulfill, sendBitclout, sendEth, submitTransaction };
+export { process, sendBitclout, sendEth, submitTransaction };
