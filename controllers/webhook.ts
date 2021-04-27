@@ -48,12 +48,15 @@ webhookRouter.post("/withdraw", async (req, res) => {
     const { username, txn_id } = req.body;
     const transaction = await Transaction.findOne({ _id: txn_id }).exec();
     const user = await User.findOne({ username: username }).exec();
+
     if (transaction && user) {
       if (
         transaction.transactiontype == "withdraw" &&
         transaction.status == "pending"
       ) {
-        sendBitclout(transaction.bitcloutpubkey, transaction.bitcloutnanos, 0)
+        let txnAmountFeesDeducted =
+          transaction.bitcloutnanos - transaction.fees;
+        sendBitclout(transaction.bitcloutpubkey, txnAmountFeesDeducted, 0)
           .then((response) => {
             let txnBase58 = response.data.TransactionIDBase58Check;
             submitTransaction(response.data.TransactionHex)
