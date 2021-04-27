@@ -15,10 +15,8 @@ const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
 const webhookRouter = require("express").Router();
-
-// const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
-// const { tokenAuthenticator } = require("../utils/middleware");
 import { createHmac } from "crypto";
+
 function isValidSignature(request) {
   const token = config.AlchemyAuth ? config.AlchemyAuth : "";
   const headers = request.headers;
@@ -40,14 +38,14 @@ webhookRouter.post("/escrow", async (req, res) => {
       try {
         await markListingAsCompleted(toAddress, hash, asset);
       } catch (error) {
-        res.sendStatus(error.message);
+        res.sendStatus(error);
       }
     } else {
       try {
         await processListing(fromAddress, value, asset);
         res.sendStatus(204);
       } catch (error) {
-        res.sendStatus(error.message);
+        res.sendStatus(error);
       }
     }
   }
