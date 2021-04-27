@@ -10,7 +10,9 @@ import * as config from "./config";
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 const fee = 0;
-const escrowWallet = web3.eth.accounts.privateKeyToAccount("0x" + config.KEY);
+const escrowWallet = web3.eth.accounts.privateKeyToAccount(
+  "0x" + config.WALLET_SECRET
+);
 
 console.log(config);
 
@@ -35,7 +37,7 @@ const sendEth = (
   };
   console.log(rawTx, escrowWallet, gasprice, nonce);
   const transaction = new EthereumTx(rawTx, {
-    chain: "kovan",
+    chain: config.NETWORK,
   });
   transaction.sign(web3.utils.hexToBytes(escrowWallet.privateKey));
   const serializedTransaction = transaction.serialize();
@@ -58,7 +60,7 @@ const sendBitclout = (
       AmountNanos: amountnanos,
       MinFeeRateNanosPerKB: 1000,
       RecipientPublicKeyOrUsername: bitcloutpubkey,
-      SenderPublicKeyBase58Check: config.PUBLIC_KEY,
+      SenderPublicKeyBase58Check: config.PUBLIC_KEY_BITCLOUT,
     }),
     {
       headers: {
@@ -104,11 +106,12 @@ const process = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, fee)
+      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos - 200 / 1e9, fee)
         .then((response) => {
+          let txnBase58 = response.data.TransactionIDBase58Check;
           submitTransaction(response.data.TransactionHex)
             .then((txnresponse) => {
-              listing.bitcloutTransactionId = txnresponse.data.TxnHashHex;
+              listing.bitcloutTransactionId = txnBase58;
               listing.bitcloutsent = true;
               logger.info("bitclout sent");
               sendEth(
