@@ -35,7 +35,7 @@ const sendEth = (
   };
   console.log(rawTx, escrowWallet, gasprice, nonce);
   const transaction = new EthereumTx(rawTx, {
-    chain: "mainnet",
+    chain: "kovan",
   });
   transaction.sign(web3.utils.hexToBytes(escrowWallet.privateKey));
   const serializedTransaction = transaction.serialize();
