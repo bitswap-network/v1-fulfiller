@@ -12,3 +12,4 @@ export let CFDUID = process.env.CFDUID;
 export let FROM = process.env.FROM;
 export let SEED_HEX = process.env.SEED_HEX;
 export let AlchemyAuth = process.env.ALCHEMY_AUTH;
+export let ServerAuth = process.env.SERVER_AUTH;

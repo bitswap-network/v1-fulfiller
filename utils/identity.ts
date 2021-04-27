@@ -1,5 +1,5 @@
 import * as config from "./config";
-import { createDecipher, randomBytes } from "crypto";
+import { createDecipher, randomBytes, createHmac } from "crypto";
 import { ec as EC } from "elliptic";
 import * as sha256 from "sha256";
 
@@ -54,4 +54,29 @@ const uintToBuf = (uint: number) => {
 
   return Buffer.from(result);
 };
-export { handleSign };
+
+const verifyAlchemySignature = (request: any) => {
+  const token = config.AlchemyAuth ? config.AlchemyAuth : "";
+  const headers = request.headers;
+  const signature = headers["x-alchemy-signature"]; // Lowercase for NodeJS
+  const body = request.body;
+  const hmac = createHmac("sha256", token); // Create a HMAC SHA256 hash using the auth token
+  hmac.update(JSON.stringify(body), "utf8");
+  const digest = hmac.digest("hex");
+  console.log("sigdig: ", signature, digest);
+  return signature === digest; // If signature equals your computed hash, return true
+};
+
+const verifySignature = (request: any) => {
+  const token = config.ServerAuth ? config.ServerAuth : "";
+  const headers = request.headers;
+  const signature = headers["server-signature"]; // Lowercase for NodeJS
+  const body = request.body;
+  const hmac = createHmac("sha256", token); // Create a HMAC SHA256 hash using the auth token
+  hmac.update(JSON.stringify(body), "utf8");
+  const digest = hmac.digest("hex");
+  console.log("sigdig: ", signature, digest);
+  return signature === digest; // If signature equals your computed hash, return true
+};
+
+export { handleSign, verifyAlchemySignature, verifySignature };
