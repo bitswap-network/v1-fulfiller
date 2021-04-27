@@ -73,9 +73,8 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
     const seller = await User.findById(listing.seller).exec();
     if (asset == "ETH" && seller) {
       listing.escrowsent = true;
-      buyer.buys.push(listing._id);
-      buyer.completedtransactions += 1;
-      seller.completedtransactions += 1;
+      buyer.completedorders += 1;
+      seller.completedorders += 1;
       buyer.buystate = false;
       listing.ongoing = false;
       listing.completed = {

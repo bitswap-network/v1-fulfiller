@@ -53,11 +53,7 @@ webhookRouter.post("/withdraw", async (req, res) => {
         transaction.transactiontype == "withdraw" &&
         transaction.status == "pending"
       ) {
-        sendBitclout(
-          transaction.bitcloutpubkey,
-          transaction.bitcloutnanos - 200 / 1e9,
-          0
-        )
+        sendBitclout(transaction.bitcloutpubkey, transaction.bitcloutnanos, 0)
           .then((response) => {
             let txnBase58 = response.data.TransactionIDBase58Check;
             submitTransaction(response.data.TransactionHex)
