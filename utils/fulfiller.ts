@@ -106,47 +106,27 @@ const process = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos, 0)
-        .then((response) => {
-          let bitcloutfee = response.data.FeeNanos;
-          sendBitclout(
-            buyer.bitcloutpubkey,
-            listing.bitcloutnanos - bitcloutfee,
-            swapfee
-          )
-            .then((response) => {
-              let txnBase58 = response.data.TransactionIDBase58Check;
-              submitTransaction(response.data.TransactionHex)
-                .then((txnresponse) => {
-                  listing.bitcloutTransactionId = txnBase58;
-                  listing.bitcloutsent = true;
-                  logger.info("bitclout sent");
-                  sendEth(
-                    seller.ethereumaddress,
-                    listing.etheramount,
-                    gas.data.average / 10,
-                    nonce,
-                    swapfee
-                  )
-                    .then((result) => {
-                      listing.finalTransactionId = result.transactionHash.toLowerCase();
-                      listing.save();
-                    })
-                    .catch((error) => {
-                      logger.error(error);
-                    });
-                })
-                .catch((error) => {
-                  logger.error(error);
-                });
-            })
-            .catch((error) => {
-              logger.error(error);
-            });
+      seller.bitswapbalance += listing.bitcloutnanos / 1e9;
+      listing.bitcloutsent = true;
+      logger.info("bitclout added to seller wallet");
+      seller.save();
+      listing.save();
+      sendEth(
+        seller.ethereumaddress,
+        listing.etheramount,
+        gas.data.average / 10,
+        nonce,
+        swapfee
+      )
+        .then((result) => {
+          console.log(result);
+          listing.finalTransactionId = result.transactionHash.toLowerCase();
+          listing.save();
         })
         .catch((error) => {
           logger.error(error);
         });
+
       return 1;
     } else {
       logger.error("Buyer/Seller not found");

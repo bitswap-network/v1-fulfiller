@@ -25,6 +25,7 @@ webhookRouter.post("/escrow", async (req, res) => {
       try {
         await markListingAsCompleted(toAddress, hash, asset);
       } catch (error) {
+        console.log(error);
         res.sendStatus(error);
       }
     } else {
@@ -32,6 +33,7 @@ webhookRouter.post("/escrow", async (req, res) => {
         await processListing(fromAddress, value, asset);
         res.sendStatus(204);
       } catch (error) {
+        console.log(error);
         res.sendStatus(error);
       }
     }
