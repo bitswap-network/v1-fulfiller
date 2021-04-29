@@ -65,26 +65,24 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
     ongoing: true,
     finalTransactionId: hash.toLowerCase(),
   }).exec();
-  const buyer = await User.findOne({
-    ethereumaddress: toAddress.toLowerCase(),
-  }).exec();
-  console.log(listing, buyer);
-  if (listing && buyer) {
+
+  console.log(listing);
+  if (listing) {
+    const buyer = await User.findById(listing.buyer).exec();
     const seller = await User.findById(listing.seller).exec();
-    if (asset == "ETH" && seller) {
+    if (asset == "ETH" && seller && buyer) {
       buyer.bitswapbalance +=
         (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
-      listing.bitcloutsent = true;
-
-      listing.escrowsent = true;
       buyer.completedorders += 1;
-      seller.completedorders += 1;
       buyer.buystate = false;
       listing.ongoing = false;
+      listing.bitcloutsent = true;
+      listing.escrowsent = true;
       listing.completed = {
         status: true,
         date: new Date(),
       };
+      seller.completedorders += 1;
       listing.save((err: any) => {
         if (err) {
           throw 500;
