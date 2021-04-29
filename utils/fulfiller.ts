@@ -119,7 +119,7 @@ const process = async (listing_id: string) => {
         swapfee
       )
         .then((result) => {
-          console.log(result);
+          console.log("sendEthResult", result);
           listing.finalTransactionId = result.transactionHash.toLowerCase();
           listing.save();
         })
