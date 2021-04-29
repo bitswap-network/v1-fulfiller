@@ -95,13 +95,12 @@ const submitTransaction = async (txnhex: string) => {
 
 const process = async (listing_id: string) => {
   const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
-  // console.log(gas);
   const nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
   );
+  console.log(gas, nonce);
   const listing = await Listing.findOne({ _id: listing_id }).exec();
-
   if (listing) {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
@@ -114,8 +113,8 @@ const process = async (listing_id: string) => {
       sendEth(
         seller.ethereumaddress,
         listing.etheramount,
-        gas.data.average / 10,
         nonce,
+        gas.data.average / 10,
         swapfee
       )
         .then((result) => {
@@ -126,7 +125,6 @@ const process = async (listing_id: string) => {
         .catch((error) => {
           logger.error(error);
         });
-
       return 1;
     } else {
       logger.error("Buyer/Seller not found");
