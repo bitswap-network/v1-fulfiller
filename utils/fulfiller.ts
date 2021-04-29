@@ -105,12 +105,6 @@ const process = async (listing_id: string) => {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      buyer.bitswapbalance +=
-        (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
-      listing.bitcloutsent = true;
-      logger.info("bitclout added to seller wallet");
-      buyer.save();
-      listing.save();
       sendEth(
         seller.ethereumaddress,
         listing.etheramount,

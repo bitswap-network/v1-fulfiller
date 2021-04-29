@@ -2,7 +2,7 @@ import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
 import { process } from "../utils/fulfiller";
-
+const swapfee = 0.02;
 const processListing = async (fromAddress, value, asset) => {
   const buyer = await User.findOne({
     ethereumaddress: fromAddress.toLowerCase(),
@@ -72,6 +72,10 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
   if (listing && buyer) {
     const seller = await User.findById(listing.seller).exec();
     if (asset == "ETH" && seller) {
+      buyer.bitswapbalance +=
+        (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
+      listing.bitcloutsent = true;
+
       listing.escrowsent = true;
       buyer.completedorders += 1;
       seller.completedorders += 1;
