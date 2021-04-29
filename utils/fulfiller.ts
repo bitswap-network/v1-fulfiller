@@ -109,7 +109,7 @@ const process = async (listing_id: string) => {
         seller.ethereumaddress,
         listing.etheramount,
         nonce,
-        gas.data.average / 10,
+        gas.data.fast / 10,
         swapfee
       )
         .then((result) => {
