@@ -68,7 +68,7 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
   const buyer = await User.findOne({
     ethereumaddress: toAddress.toLowerCase(),
   }).exec();
-
+  console.log(listing, buyer);
   if (listing && buyer) {
     const seller = await User.findById(listing.seller).exec();
     if (asset == "ETH" && seller) {
