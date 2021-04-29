@@ -124,9 +124,9 @@ const process = async (listing_id: string) => {
                   sendEth(
                     seller.ethereumaddress,
                     listing.etheramount,
-                    swapfee,
+                    gas.data.average / 10,
                     nonce,
-                    gas.data.average / 10
+                    swapfee
                   )
                     .then((result) => {
                       listing.finalTransactionId = result.transactionHash.toLowerCase();

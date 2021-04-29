@@ -1,12 +1,7 @@
 import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
-import {
-  process,
-  sendBitclout,
-  sendEth,
-  submitTransaction,
-} from "../utils/fulfiller";
+import { sendBitclout, submitTransaction } from "../utils/fulfiller";
 import { processListing, markListingAsCompleted } from "../utils/functions";
 import axios from "axios";
 import * as config from "../utils/config";
