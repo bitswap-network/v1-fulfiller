@@ -94,7 +94,9 @@ const submitTransaction = async (txnhex: string) => {
 };
 
 const process = async (listing_id: string) => {
-  const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
+  const gas = await axios.get(
+    `https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${config.ETHERSCAN_KEY}`
+  );
   const nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
@@ -109,7 +111,7 @@ const process = async (listing_id: string) => {
         seller.ethereumaddress,
         listing.etheramount,
         nonce,
-        gas.data.fast / 10,
+        parseInt(gas.data.result.ProposeGasPrice),
         swapfee
       )
         .then((result) => {
