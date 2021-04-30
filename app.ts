@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import * as middleware from "./utils/middleware";
+import logRouter from "./controllers/logging";
 import webhookRouter from "./controllers/webhook";
 const logger = require("./utils/logger");
 const mongoose = require("mongoose");
@@ -33,8 +34,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/webhook", webhookRouter);
+app.use("/logs", logRouter);
 
 app.use(middleware.errorHandler);
-
 
 export default app;
