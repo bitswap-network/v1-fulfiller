@@ -2,7 +2,7 @@ import User from "../models/user";
 import Listing from "../models/listing";
 import Transaction from "../models/transaction";
 import { process } from "../utils/fulfiller";
-
+const swapfee = 0.02;
 const processListing = async (fromAddress, value, asset) => {
   const buyer = await User.findOne({
     ethereumaddress: fromAddress.toLowerCase(),
@@ -65,23 +65,24 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
     ongoing: true,
     finalTransactionId: hash.toLowerCase(),
   }).exec();
-  const buyer = await User.findOne({
-    ethereumaddress: toAddress.toLowerCase(),
-  }).exec();
 
-  if (listing && buyer) {
+  console.log(listing);
+  if (listing) {
+    const buyer = await User.findById(listing.buyer).exec();
     const seller = await User.findById(listing.seller).exec();
-    if (asset == "ETH" && seller) {
-      listing.escrowsent = true;
-      buyer.buys.push(listing._id);
-      buyer.completedtransactions += 1;
-      seller.completedtransactions += 1;
+    if (asset == "ETH" && seller && buyer) {
+      buyer.bitswapbalance +=
+        (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
+      buyer.completedorders += 1;
       buyer.buystate = false;
       listing.ongoing = false;
+      listing.bitcloutsent = true;
+      listing.escrowsent = true;
       listing.completed = {
         status: true,
         date: new Date(),
       };
+      seller.completedorders += 1;
       listing.save((err: any) => {
         if (err) {
           throw 500;

@@ -11,3 +11,4 @@ export let SEED_HEX = process.env.SEED_HEX;
 export let AlchemyAuth = process.env.ALCHEMY_AUTH;
 export let ServerAuth = process.env.SERVER_AUTH;
 export let NETWORK = process.env.NETWORK;
+export let ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;

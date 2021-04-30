@@ -9,7 +9,7 @@ const logger = require("./logger");
 import * as config from "./config";
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
-const fee = 0;
+const swapfee = 0.02;
 const escrowWallet = web3.eth.accounts.privateKeyToAccount(
   "0x" + config.WALLET_SECRET
 );
@@ -19,16 +19,16 @@ console.log(config);
 const sendEth = (
   ethereumaddress: string,
   value: number,
-  txnfee: number,
   nonce: number,
-  gasprice: number
+  gasprice: number,
+  fee: number
 ) => {
   let rawTx = {
     to: ethereumaddress,
     from: escrowWallet.address,
     value: web3.utils.toHex(
       web3.utils.toWei(
-        (value - value * txnfee - (21000 * gasprice) / 1e9).toString()
+        (value - value * fee - (21000 * gasprice) / 1e9).toString()
       )
     ),
     gasLimit: web3.utils.toHex(21000),
@@ -50,14 +50,14 @@ const sendEth = (
 const sendBitclout = (
   bitcloutpubkey: string,
   amountnanos: number,
-  txnfee: number
+  fee: number
 ) => {
   console.log("sending bclt");
 
   return axios.post(
     "https://api.bitclout.com/send-bitclout",
     JSON.stringify({
-      AmountNanos: amountnanos,
+      AmountNanos: parseInt((amountnanos - amountnanos * fee).toString()),
       MinFeeRateNanosPerKB: 1000,
       RecipientPublicKeyOrUsername: bitcloutpubkey,
       SenderPublicKeyBase58Check: config.PUBLIC_KEY_BITCLOUT,
@@ -94,62 +94,34 @@ const submitTransaction = async (txnhex: string) => {
 };
 
 const process = async (listing_id: string) => {
-  const gas = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
-  // console.log(gas);
+  const gas = await axios.get(
+    `https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${config.ETHERSCAN_KEY}`
+  );
   const nonce = await web3.eth.getTransactionCount(
     escrowWallet.address,
     "pending"
   );
+  console.log(gas, nonce);
   const listing = await Listing.findOne({ _id: listing_id }).exec();
-
   if (listing) {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     if (buyer && seller) {
-      sendBitclout(buyer.bitcloutpubkey, listing.bitcloutnanos - 200 / 1e9, fee)
-        .then((response) => {
-          let txnBase58 = response.data.TransactionIDBase58Check;
-          submitTransaction(response.data.TransactionHex)
-            .then((txnresponse) => {
-              listing.bitcloutTransactionId = txnBase58;
-              listing.bitcloutsent = true;
-              logger.info("bitclout sent");
-              sendEth(
-                seller.ethereumaddress,
-                listing.etheramount,
-                fee,
-                nonce,
-                gas.data.average / 10
-              )
-                .then((result) => {
-                  listing.finalTransactionId = result.transactionHash.toLowerCase();
-                  // listing.escrowsent = true;
-                  // buyer.buys.push(listing._id);
-                  // buyer.completedtransactions += 1;
-                  // seller.completedtransactions += 1;
-                  // buyer.buystate = false;
-                  // listing.ongoing = false;
-                  // listing.completed = {
-                  //   status: true,
-                  //   date: new Date(),
-                  // };
-
-                  listing.save();
-                  // buyer.save();
-                  // seller.save();
-                })
-                .catch((error) => {
-                  logger.error(error);
-                });
-            })
-            .catch((error) => {
-              logger.error(error);
-            });
+      sendEth(
+        seller.ethereumaddress,
+        listing.etheramount,
+        nonce,
+        parseInt(gas.data.result.ProposeGasPrice),
+        swapfee
+      )
+        .then((result) => {
+          console.log("sendEthResult", result);
+          listing.finalTransactionId = result.transactionHash.toLowerCase();
+          listing.save();
         })
         .catch((error) => {
           logger.error(error);
         });
-
       return 1;
     } else {
       logger.error("Buyer/Seller not found");
