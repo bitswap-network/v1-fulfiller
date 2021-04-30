@@ -25,14 +25,15 @@ webhookRouter.post("/escrow", async (req, res) => {
   if (verifyAlchemySignature(req)) {
     const { fromAddress, toAddress, value, asset, hash } = req.body.activity[0];
 
-    // If the transaction is sent to the wallet
+    // If the transaction is successfully sent from the wallet
+    // Mark the listing as completed
     if (fromAddress.toLowerCase() === escrowWallet.address.toLowerCase()) {
       try {
         await markListingAsCompleted(toAddress, hash, asset);
       } catch (error) {
         res.sendStatus(error);
       }
-    } else {
+    } else { // Transaction is sent to the wallet
       try {
         await processListing(fromAddress, value, asset);
         res.sendStatus(204);
