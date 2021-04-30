@@ -4,6 +4,7 @@ import helmet from "helmet";
 import * as middleware from "./utils/middleware";
 import logRouter from "./controllers/logging";
 import webhookRouter from "./controllers/webhook";
+import coreRouter from "./controllers/core";
 const logger = require("./utils/logger");
 const mongoose = require("mongoose");
 const config = require("./utils/config");
@@ -35,6 +36,7 @@ app.get("/", (req, res) => {
 
 app.use("/webhook", webhookRouter);
 app.use("/logs", logRouter);
+app.use("/core", coreRouter);
 
 app.use(middleware.errorHandler);
 
