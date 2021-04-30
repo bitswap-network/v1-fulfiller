@@ -1,3 +1,7 @@
 node_modules
 .env
 build
+build/
+combined.log
+err.log
+out.log
