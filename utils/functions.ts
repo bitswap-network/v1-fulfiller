@@ -1,6 +1,6 @@
 import User from "../models/user";
 import Listing from "../models/listing";
-import Transaction from "../models/transaction";
+import axios from "axios";
 import { process } from "../utils/fulfiller";
 const swapfee = 0.02;
 
@@ -132,6 +132,15 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
                     if (err) {
                       throw 500;
                     } else {
+                      axios.post("https://api.bitswap.network/utility/sendcompleteemail", {
+                        seller: seller.email,
+                        buyer: buyer.email,
+                        id: listing._id 
+                      }, {
+                        headers: {
+                          Authorization: "179f7a49640c7004449101b043852736"
+                        }
+                      })
                       return "Listing completed";
                     }
                   });
