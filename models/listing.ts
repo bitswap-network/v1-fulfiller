@@ -1,5 +1,4 @@
 import { model, Schema, Document } from "mongoose";
-
 export interface listingDoc extends Document {
   seller: Schema.Types.ObjectId;
   buyer: Schema.Types.ObjectId | null;
@@ -11,9 +10,11 @@ export interface listingDoc extends Document {
   escrow: { balance: number; full: Boolean };
   bitcloutsent: boolean;
   escrowsent: boolean;
+  bitcloutTransactionId: string;
   finalTransactionId: string;
   created: Date;
   completed: { status: boolean; date: Date };
+  ethaddress: string;
 }
 
 const listingSchema = new Schema<listingDoc>({
@@ -30,6 +31,7 @@ const listingSchema = new Schema<listingDoc>({
   },
   bitcloutsent: { type: Boolean, default: false },
   escrowsent: { type: Boolean, default: false },
+  // bitcloutTransactionId: { type: String, default: "" },
   finalTransactionId: { type: String, default: "" },
   created: {
     type: Date,
@@ -39,6 +41,7 @@ const listingSchema = new Schema<listingDoc>({
     status: { type: Boolean, default: false },
     date: { type: Date },
   },
+  ethaddress: { type: String },
 });
 const Listing = model<listingDoc>("Listing", listingSchema);
 
