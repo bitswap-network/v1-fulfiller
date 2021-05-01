@@ -117,7 +117,7 @@ const process = async (listing_id: string) => {
         sendaddress,
         listing.etheramount,
         nonce,
-        parseInt((gas.data.result.ProposeGasPrice / 10).toString()),
+        parseInt(gas.data.result.FastGasPrice.toString()),
         swapfee
       )
         .then((result) => {
