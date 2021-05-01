@@ -3,6 +3,7 @@ import Listing from "../models/listing";
 import Transaction from "../models/transaction";
 import { process } from "../utils/fulfiller";
 const swapfee = 0.02;
+
 const processListing = async (fromAddress, value, asset) => {
   const buyer = await User.findOne({
     ethereumaddress: fromAddress.toLowerCase(),
