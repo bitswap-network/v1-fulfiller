@@ -1,6 +1,7 @@
 import { processListing, markListingAsCompleted } from "../utils/functions";
 import * as config from "../utils/config";
-import { verifyAlchemySignature } from "../utils/identity";
+import { verifyAlchemySignature, verifySignature } from "../utils/identity";
+import Listing from "../models/listing";
 
 const logger = require("../utils/logger");
 const Web3 = require("web3");
@@ -24,14 +25,28 @@ webhookRouter.post("/escrow", async (req, res) => {
         console.log(error);
         res.sendStatus(error);
       }
-    } else { // Transaction is sent to the wallet
+    } else {
+      // Transaction is sent to the wallet
       try {
-        await processListing(fromAddress, value, asset);
+        await processListing(fromAddress, value, asset, false, null);
         res.sendStatus(204);
       } catch (error) {
         console.log(error);
         res.sendStatus(error);
       }
+    }
+  }
+});
+
+webhookRouter.post("/retry", async (req, res) => {
+  if (verifySignature(req)) {
+    const { listing_id } = req.body;
+    try {
+      await processListing(null, null, null, true, listing_id);
+      res.sendStatus(204);
+    } catch (error) {
+      console.log(error);
+      res.sendStatus(error);
     }
   }
 });
