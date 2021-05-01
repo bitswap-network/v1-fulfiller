@@ -7,7 +7,10 @@ const processListing = async (fromAddress, value, asset, retry, id) => {
   if (retry) {
     const listing = await Listing.findById(id).exec();
     if (listing) {
-      if (listing.escrow.balance >= listing.etheramount) {
+      if (
+        listing.escrow.balance >= listing.etheramount &&
+        !listing.completed.status
+      ) {
         listing.escrow.full = true;
         listing.save((err: any) => {
           if (err) {
@@ -42,11 +45,10 @@ const processListing = async (fromAddress, value, asset, retry, id) => {
           {
             buyer: buyer._id,
             ongoing: true,
+            "escrow.full": false,
           },
           {
-            $inc: {
-              "escrow.balance": value,
-            },
+            "escrow.balance": value,
           },
           {
             new: true,
@@ -54,7 +56,10 @@ const processListing = async (fromAddress, value, asset, retry, id) => {
         ).exec();
 
         if (listing) {
-          if (listing.escrow.balance >= listing.etheramount) {
+          if (
+            listing.escrow.balance >= listing.etheramount &&
+            !listing.escrow.full
+          ) {
             listing.escrow.full = true;
             listing.save((err: any) => {
               if (err) {
