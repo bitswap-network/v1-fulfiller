@@ -3,6 +3,7 @@ import Listing from "../models/listing";
 import Transaction from "../models/transaction";
 import { process } from "../utils/fulfiller";
 const swapfee = 0.02;
+
 const processListing = async (fromAddress, value, asset, retry, id) => {
   if (retry) {
     const listing = await Listing.findById(id).exec();
