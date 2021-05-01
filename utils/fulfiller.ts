@@ -106,9 +106,14 @@ const process = async (listing_id: string) => {
   if (listing) {
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
-    if (buyer && seller) {
+    let sendaddress = listing.ethaddress
+      ? listing.ethaddress
+      : Array.isArray(seller?.ethereumaddress)
+      ? seller?.ethereumaddress[0]
+      : seller?.ethereumaddress;
+    if (buyer && seller && sendaddress) {
       sendEth(
-        seller.ethereumaddress,
+        sendaddress,
         listing.etheramount,
         nonce,
         parseInt(gas.data.result.ProposeGasPrice),

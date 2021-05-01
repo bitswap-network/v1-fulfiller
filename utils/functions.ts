@@ -5,7 +5,7 @@ import { process } from "../utils/fulfiller";
 const swapfee = 0.02;
 const processListing = async (fromAddress, value, asset) => {
   const buyer = await User.findOne({
-    ethereumaddress: fromAddress.toLowerCase(),
+    ethereumaddress: { $in: [fromAddress.toLowerCase()] },
   }).exec();
 
   if (buyer) {
