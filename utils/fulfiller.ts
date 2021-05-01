@@ -111,6 +111,7 @@ const process = async (listing_id: string) => {
       : Array.isArray(seller?.ethereumaddress)
       ? seller?.ethereumaddress[0]
       : seller?.ethereumaddress;
+    console.log(sendaddress);
     if (buyer && seller && sendaddress) {
       sendEth(
         sendaddress,
