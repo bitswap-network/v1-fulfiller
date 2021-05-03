@@ -4,12 +4,20 @@ import axios from "axios";
 import { process } from "../utils/fulfiller";
 const swapfee = 0.02;
 
+const validAmount = (value1: number, value2: number) => {
+  if (Math.abs(value1 - value2) < 1e-6) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 const processListing = async (fromAddress, value, asset, retry, id) => {
   if (retry) {
     const listing = await Listing.findById(id).exec();
     if (listing) {
       if (
-        listing.escrow.balance >= listing.etheramount &&
+        validAmount(listing.escrow.balance, listing.etheramount) &&
         !listing.completed.status
       ) {
         listing.escrow.full = true;
