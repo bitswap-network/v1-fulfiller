@@ -140,15 +140,19 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
                     if (err) {
                       throw 500;
                     } else {
-                      axios.post("https://api.bitswap.network/utility/sendcompleteemail", {
-                        seller: seller.email,
-                        buyer: buyer.email,
-                        id: listing._id 
-                      }, {
-                        headers: {
-                          Authorization: "179f7a49640c7004449101b043852736"
+                      axios.post(
+                        "https://api.bitswap.network/utility/sendcompleteemail",
+                        {
+                          seller: seller.email,
+                          buyer: buyer.email,
+                          id: listing._id,
+                        },
+                        {
+                          headers: {
+                            Authorization: "179f7a49640c7004449101b043852736",
+                          },
                         }
-                      })
+                      );
                       return "Listing completed";
                     }
                   });
