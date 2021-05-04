@@ -105,8 +105,6 @@ export const processListing = async (listing_id, value, asset, retry) => {
     const listing = await Listing.findById(listing_id).exec();
 
     if (listing && asset == "ETH") {
-      listing.escrow.balance += value;
-
       if (
         validAmount(listing.escrow.balance, listing.etheramount) &&
         !listing.escrow.full
@@ -127,7 +125,6 @@ export const processListing = async (listing_id, value, asset, retry) => {
           }
         });
       } else {
-        listing.save();
         throw 409;
         //   throw "Insufficient funds";
       }
