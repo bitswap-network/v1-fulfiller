@@ -126,46 +126,69 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
         date: new Date(),
       };
       seller.completedorders += 1;
-      listing.save((err: any) => {
-        if (err) {
-          throw 500;
-        } else {
-          try {
-            buyer.save((err: any) => {
-              if (err) {
-                throw 500;
-              } else {
-                try {
-                  seller.save((err: any) => {
-                    if (err) {
-                      throw 500;
-                    } else {
-                      axios.post(
-                        "https://api.bitswap.network/utility/sendcompleteemail",
-                        {
-                          seller: seller.email,
-                          buyer: buyer.email,
-                          id: listing._id,
-                        },
-                        {
-                          headers: {
-                            Authorization: "179f7a49640c7004449101b043852736",
-                          },
-                        }
-                      );
-                      return "Listing completed";
-                    }
-                  });
-                } catch (error) {
-                  throw 500;
-                }
-              }
-            });
-          } catch (error) {
-            throw 500;
+
+      try {
+        await listing.save();
+        await buyer.save();
+        await seller.save();
+        await axios.post(
+          "https://api.bitswap.network/utility/sendcompleteemail",
+          {
+            seller: seller.email,
+            buyer: buyer.email,
+            id: listing._id,
+          },
+          {
+            headers: {
+              Authorization: "179f7a49640c7004449101b043852736",
+            },
           }
-        }
-      });
+        );
+        return "Listing completed";
+      } catch (error) {
+        throw 500;
+      }
+
+      // listing.save((err: any) => {
+      //   if (err) {
+      //     throw 500;
+      //   } else {
+      //     try {
+      //       buyer.save((err: any) => {
+      //         if (err) {
+      //           throw 500;
+      //         } else {
+      //           try {
+      //             seller.save((err: any) => {
+      //               if (err) {
+      //                 throw 500;
+      //               } else {
+      //                 axios.post(
+      //                   "https://api.bitswap.network/utility/sendcompleteemail",
+      //                   {
+      //                     seller: seller.email,
+      //                     buyer: buyer.email,
+      //                     id: listing._id,
+      //                   },
+      //                   {
+      //                     headers: {
+      //                       Authorization: "179f7a49640c7004449101b043852736",
+      //                     },
+      //                   }
+      //                 );
+      //                 return "Listing completed";
+      //               }
+      //             });
+      //           } catch (error) {
+      //             throw 500;
+      //           }
+      //         }
+      //       });
+      //     } catch (error) {
+      //       throw 500;
+      //     }
+      //   }
+      // });
     } else {
       throw 400;
     }
