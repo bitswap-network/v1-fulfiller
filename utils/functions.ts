@@ -13,10 +13,11 @@ const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 const swapfee = 0.02;
 
 const algorithm = "aes-256-cbc";
-const validAmount = (balance: number, amount: number) => {
-  if (Math.abs(balance - amount) < 1e-6) {
+const validAmount = (value: number, amount: number) => {
+  //valid range error 0.1%
+  if (Math.abs(value - amount) / amount <= 0.001) {
     return true;
-  } else if (balance >= amount) {
+  } else if (value >= amount) {
     return true;
   } else {
     return false;
@@ -76,21 +77,21 @@ export const processListing = async (listing_id, value, asset, retry) => {
     const listing = await Listing.findById(listing_id).exec();
     if (listing) {
       if (
-        validAmount(listing.escrow.balance, listing.etheramount) &&
+        validAmount(value, listing.etheramount) &&
         !listing.completed.status
       ) {
         listing.escrow.full = true;
         listing.save((err: any) => {
           if (err) {
             // throw 500;
-            throw  "An error occurred while saving the listing";
+            throw "An error occurred while saving the listing";
           } else {
             try {
               process(listing._id);
               return "Listing successfully fulfilled";
             } catch (error) {
               // throw 500;
-              throw  error.message;
+              throw error.message;
             }
           }
         });
@@ -100,7 +101,7 @@ export const processListing = async (listing_id, value, asset, retry) => {
       }
     } else {
       // throw 404;
-      throw  "Listing could not be found";
+      throw "Listing could not be found";
     }
   } else {
     const listing = await Listing.findById(listing_id).exec();
@@ -114,24 +115,24 @@ export const processListing = async (listing_id, value, asset, retry) => {
         listing.save((err: any) => {
           if (err) {
             // throw 500;
-            throw  "An error occurred while saving the listing";
+            throw "An error occurred while saving the listing";
           } else {
             try {
               process(listing._id);
               return "Listing successfully fulfilled";
             } catch (error) {
               // throw 500;
-              throw  error.message;
+              throw error.message;
             }
           }
         });
       } else {
         // throw 409;
-         throw "Insufficient funds";
+        throw "Insufficient funds";
       }
     } else {
       // return 404;
-      throw  "Buyer not found";
+      throw "Buyer not found";
     }
   }
 };
