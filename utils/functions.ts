@@ -7,6 +7,8 @@ import Pool from "../models/pool";
 import * as config from "./config";
 import { process } from "../utils/fulfiller";
 import { AxiosResponse } from "axios";
+const Web3 = require("web3");
+const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 
 const swapfee = 0.02;
 
@@ -148,8 +150,10 @@ export const markListingAsCompleted = async (toAddress, hash, asset) => {
     const buyer = await User.findById(listing.buyer).exec();
     const seller = await User.findById(listing.seller).exec();
     if (asset == "ETH" && seller && buyer && pool) {
+      const balance = await web3.eth.getBalance(pool.address);
       pool.active = false;
       pool.listing = null;
+      pool.balance = balance;
       buyer.bitswapbalance +=
         (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
       buyer.completedorders += 1;

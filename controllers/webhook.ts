@@ -31,12 +31,16 @@ webhookRouter.post("/escrow", async (req, res) => {
         const pool = await Pool.findOne({
           address: toAddress.toLowerCase(),
         }).exec();
-        if (pool!.active && pool) {
-          await processListing(pool.listing, value, asset, false);
-          res.sendStatus(204);
-        } else {
-          console.log("sent to inactive pool");
-          res.sendStatus(400);
+        if (pool) {
+          pool.balance += value;
+          await pool.save();
+          if (pool.active) {
+            await processListing(pool.listing, value, asset, false);
+            res.sendStatus(204);
+          } else {
+            console.log("sent to inactive pool");
+            res.sendStatus(400);
+          }
         }
       } catch (error) {
         console.log(error);
