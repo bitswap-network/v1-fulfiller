@@ -12,7 +12,7 @@ export interface listingDoc extends Document {
   escrowsent: boolean;
   finalTransactionId: string;
   created: Date;
-  buy_time: Date | undefined;
+  buy_time: Date | null;
   completed: { status: boolean; date: Date };
   ethaddress: string;
   pool: Schema.Types.ObjectId | null;
