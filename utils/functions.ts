@@ -15,7 +15,7 @@ const swapfee = 0.02;
 const algorithm = "aes-256-cbc";
 const validAmount = (value: number, amount: number) => {
   //valid range error 0.1%
-  if (Math.abs(value - amount) / amount <= 0.001) {
+  if (Math.abs(value - amount) / amount <= 0.01) {
     return true;
   } else if (value >= amount) {
     return true;
@@ -80,21 +80,13 @@ export const processListing = async (listing_id, value, asset, retry) => {
         validAmount(listing.escrow.balance, listing.etheramount) &&
         !listing.completed.status
       ) {
-        listing.escrow.full = true;
-        listing.save((err: any) => {
-          if (err) {
-            // throw 500;
-            throw "An error occurred while saving the listing";
-          } else {
-            try {
-              process(listing._id);
-              return "Listing successfully fulfilled";
-            } catch (error) {
-              // throw 500;
-              throw error.message;
-            }
-          }
-        });
+        try {
+          process(listing._id);
+          return "Listing successfully fulfilled";
+        } catch (error) {
+          // throw 500;
+          throw error.message;
+        }
       } else {
         // throw 409;
         throw "Insufficient funds";
@@ -107,7 +99,7 @@ export const processListing = async (listing_id, value, asset, retry) => {
     const listing = await Listing.findById(listing_id).exec();
 
     if (listing && asset == "ETH") {
-      if (validAmount(value, listing.etheramount) && !listing.escrow.full) {
+      if (validAmount(value, listing.etheramount)) {
         listing.escrow.balance += value;
         listing.escrow.full = true;
         listing.save((err: any) => {
