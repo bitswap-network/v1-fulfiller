@@ -17,6 +17,8 @@ const validAmount = (balance: number, amount: number) => {
   //valid range error 0.1%
   if (Math.abs(balance - amount) / amount <= 0.001) {
     return true;
+  } else if (balance >= amount) {
+    return true;
   } else {
     return false;
   }
