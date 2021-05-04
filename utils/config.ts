@@ -15,4 +15,4 @@ export let ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 export let ADDRESS_ENCRYPT_PRIVATEKEY = process.env.ADDRESS_ENCRYPT_PRIVATEKEY
   ? process.env.ADDRESS_ENCRYPT_PRIVATEKEY
   : "";
-export let WEBHOOK_ID = 148985;
+export let WEBHOOK_ID = 148926;

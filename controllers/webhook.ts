@@ -4,9 +4,6 @@ import Pool from "../models/pool";
 import { verifyAlchemySignature, verifySignature } from "../utils/identity";
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
-const escrowWallet = web3.eth.accounts.privateKeyToAccount(
-  "0x" + config.WALLET_SECRET
-);
 
 const webhookRouter = require("express").Router();
 

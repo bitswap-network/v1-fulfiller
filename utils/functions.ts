@@ -153,7 +153,7 @@ export const markListingAsCompleted = async (toAddress, hash, asset) => {
       const balance = await web3.eth.getBalance(pool.address);
       pool.active = false;
       pool.listing = null;
-      pool.balance = balance;
+      pool.balance = balance / 1e18;
       buyer.bitswapbalance +=
         (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
       buyer.completedorders += 1;
