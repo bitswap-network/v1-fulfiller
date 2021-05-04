@@ -77,7 +77,7 @@ export const processListing = async (listing_id, value, asset, retry) => {
     const listing = await Listing.findById(listing_id).exec();
     if (listing) {
       if (
-        validAmount(value, listing.etheramount) &&
+        validAmount(listing.escrow.balance, listing.etheramount) &&
         !listing.completed.status
       ) {
         listing.escrow.full = true;
@@ -107,10 +107,8 @@ export const processListing = async (listing_id, value, asset, retry) => {
     const listing = await Listing.findById(listing_id).exec();
 
     if (listing && asset == "ETH") {
-      if (
-        validAmount(listing.escrow.balance, listing.etheramount) &&
-        !listing.escrow.full
-      ) {
+      if (validAmount(value, listing.etheramount) && !listing.escrow.full) {
+        listing.escrow.balance += value;
         listing.escrow.full = true;
         listing.save((err: any) => {
           if (err) {
