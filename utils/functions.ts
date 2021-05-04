@@ -1,20 +1,76 @@
 import User from "../models/user";
 import Listing from "../models/listing";
 import axios from "axios";
+import crypto from "crypto";
+import { poolDoc } from "../models/pool";
+import Pool from "../models/pool";
+import * as config from "./config";
 import { process } from "../utils/fulfiller";
+import { AxiosResponse } from "axios";
+
 const swapfee = 0.02;
 
-const validAmount = (value1: number, value2: number) => {
-  if (Math.abs(value1 - value2) < 1e-6) {
+const algorithm = "aes-256-cbc";
+const validAmount = (balance: number, amount: number) => {
+  //valid range error 0.1%
+  if (Math.abs(balance - amount) / amount <= 0.001) {
     return true;
   } else {
     return false;
   }
-}
+};
+export const encryptAddress = (address: string) => {
+  let salt = crypto.randomBytes(16);
+  let cipher = crypto.createCipheriv(
+    algorithm,
+    Buffer.from(config.ADDRESS_ENCRYPT_PRIVATEKEY),
+    salt
+  );
+  let encrypted = cipher.update(address);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return {
+    salt: salt.toString("hex"),
+    encryptedKey: encrypted.toString("hex"),
+  };
+};
 
-const processListing = async (fromAddress, value, asset, retry, id) => {
+export const decryptAddress = (keyObject: poolDoc["privateKey"]) => {
+  let salt = Buffer.from(keyObject.salt, "hex");
+  let encryptedAddress = Buffer.from(keyObject.encryptedKey, "hex");
+  let decipher = crypto.createDecipheriv(
+    algorithm,
+    Buffer.from(config.ADDRESS_ENCRYPT_PRIVATEKEY),
+    salt
+  );
+  let decrypted = decipher.update(encryptedAddress);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+};
+
+export const addAddressWebhook: (
+  address: string[]
+) => Promise<AxiosResponse> = async function (
+  address: string[]
+): Promise<AxiosResponse<any>> {
+  try {
+    return await axios.patch(
+      "https://dashboard.alchemyapi.io/api/update-webhook-addresses",
+      {
+        webhook_id: config.WEBHOOK_ID,
+        addresses_to_add: address,
+        addresses_to_remove: [],
+      },
+      {
+        headers: { "X-Alchemy-Token": config.XAlchemyToken },
+      }
+    );
+  } catch (e) {
+    throw e;
+  }
+};
+export const processListing = async (listing_id, value, asset, retry) => {
   if (retry) {
-    const listing = await Listing.findById(id).exec();
+    const listing = await Listing.findById(listing_id).exec();
     if (listing) {
       if (
         validAmount(listing.escrow.balance, listing.etheramount) &&
@@ -44,57 +100,34 @@ const processListing = async (fromAddress, value, asset, retry, id) => {
       // throw  "Listing could not be found";
     }
   } else {
-    const buyer = await User.findOne({
-      ethereumaddress: { $in: [fromAddress.toLowerCase()] },
-    }).exec();
+    const listing = await Listing.findById(listing_id).exec();
 
-    if (buyer) {
-      if (asset == "ETH") {
-        const listing = await Listing.findOneAndUpdate(
-          {
-            buyer: buyer._id,
-            ongoing: true,
-            "escrow.full": false,
-          },
-          {
-            "escrow.balance": value,
-          },
-          {
-            new: true,
-          }
-        ).exec();
+    if (listing && asset == "ETH") {
+      listing.escrow.balance += value;
 
-        if (listing) {
-          if (
-            listing.escrow.balance >= listing.etheramount &&
-            !listing.escrow.full
-          ) {
-            listing.escrow.full = true;
-            listing.save((err: any) => {
-              if (err) {
-                throw 500;
-                //   throw  "An error occurred while saving the listing";
-              } else {
-                try {
-                  process(listing._id);
-                  return "Listing successfully fulfilled";
-                } catch (error) {
-                  throw 500;
-                  // throw  error.message;
-                }
-              }
-            });
+      if (
+        validAmount(listing.escrow.balance, listing.etheramount) &&
+        !listing.escrow.full
+      ) {
+        listing.escrow.full = true;
+        listing.save((err: any) => {
+          if (err) {
+            throw 500;
+            //   throw  "An error occurred while saving the listing";
           } else {
-            throw 409;
-            //   throw "Insufficient funds";
+            try {
+              process(listing._id);
+              return "Listing successfully fulfilled";
+            } catch (error) {
+              throw 500;
+              // throw  error.message;
+            }
           }
-        } else {
-          throw 404;
-          // throw  "Listing could not be found";
-        }
+        });
       } else {
-        throw 400;
-        //   throw  "Invalid transaction type";
+        listing.save();
+        throw 409;
+        //   throw "Insufficient funds";
       }
     } else {
       return 404;
@@ -103,7 +136,7 @@ const processListing = async (fromAddress, value, asset, retry, id) => {
   }
 };
 
-const markListingAsCompleted = async (toAddress, hash, asset) => {
+export const markListingAsCompleted = async (toAddress, hash, asset) => {
   const listing = await Listing.findOne({
     ongoing: true,
     finalTransactionId: hash.toLowerCase(),
@@ -111,9 +144,12 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
 
   console.log(listing);
   if (listing) {
+    const pool = await Pool.findById(listing.pool).exec();
     const buyer = await User.findById(listing.buyer).exec();
     const seller = await User.findById(listing.seller).exec();
-    if (asset == "ETH" && seller && buyer) {
+    if (asset == "ETH" && seller && buyer && pool) {
+      pool.active = false;
+      pool.listing = null;
       buyer.bitswapbalance +=
         (listing.bitcloutnanos - listing.bitcloutnanos * swapfee) / 1e9;
       buyer.completedorders += 1;
@@ -126,8 +162,8 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
         date: new Date(),
       };
       seller.completedorders += 1;
-
       try {
+        await pool.save();
         await listing.save();
         await buyer.save();
         await seller.save();
@@ -145,50 +181,9 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
           }
         );
         return "Listing completed";
-      } catch (error) {
+      } catch (e) {
         throw 500;
       }
-
-      // listing.save((err: any) => {
-      //   if (err) {
-      //     throw 500;
-      //   } else {
-      //     try {
-      //       buyer.save((err: any) => {
-      //         if (err) {
-      //           throw 500;
-      //         } else {
-      //           try {
-      //             seller.save((err: any) => {
-      //               if (err) {
-      //                 throw 500;
-      //               } else {
-      //                 axios.post(
-      //                   "https://api.bitswap.network/utility/sendcompleteemail",
-      //                   {
-      //                     seller: seller.email,
-      //                     buyer: buyer.email,
-      //                     id: listing._id,
-      //                   },
-      //                   {
-      //                     headers: {
-      //                       Authorization: "179f7a49640c7004449101b043852736",
-      //                     },
-      //                   }
-      //                 );
-      //                 return "Listing completed";
-      //               }
-      //             });
-      //           } catch (error) {
-      //             throw 500;
-      //           }
-      //         }
-      //       });
-      //     } catch (error) {
-      //       throw 500;
-      //     }
-      //   }
-      // });
     } else {
       throw 400;
     }
@@ -196,4 +191,3 @@ const markListingAsCompleted = async (toAddress, hash, asset) => {
     throw 404;
   }
 };
-export { processListing, markListingAsCompleted };

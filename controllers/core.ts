@@ -1,9 +1,92 @@
 import { verifySignature } from "../utils/identity";
 import Transaction from "../models/transaction";
 import User from "../models/user";
+import Pool from "../models/pool";
+import { poolDoc } from "../models/pool";
+import * as config from "../utils/config";
 import { sendBitclout, submitTransaction } from "../utils/fulfiller";
+import {
+  encryptAddress,
+  decryptAddress,
+  addAddressWebhook,
+} from "../utils/functions";
+const Web3 = require("web3");
+const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 
 const coreRouter = require("express").Router();
+
+coreRouter.post("/addAccount", async (req, res) => {
+  if (verifySignature(req)) {
+    const { priv, rank } = req.body;
+    let prefix = priv.substring(0, 1);
+    let key;
+    if (prefix === "0x") {
+      key = priv;
+    } else {
+      key = "0x" + priv;
+    }
+    const wallet = await web3.eth.accounts.privateKeyToAccount(key);
+    const balance = await web3.eth.getBalance(wallet.address);
+    const pool = new Pool({
+      address: wallet.address,
+      privateKey: encryptAddress(key),
+      balance: balance / 1e18,
+      super: rank,
+    });
+    try {
+      await addAddressWebhook([wallet.address]);
+      await pool.save();
+      res.status(200).send(pool);
+    } catch (e) {
+      res.status(500).send(e);
+    }
+  } else {
+    res.sendStatus(403);
+  }
+});
+
+coreRouter.post("/initAccounts", (req, res) => {
+  if (verifySignature(req)) {
+    const { num, rank } = req.body;
+    var poollist: poolDoc[] = [];
+    var addrlist: string[] = [];
+    for (let i = 0; i < num; i++) {
+      let account = web3.eth.accounts.create();
+      let pool = new Pool({
+        address: account.address.toLowerCase(),
+        privateKey: encryptAddress(account.privateKey),
+        super: parseInt(rank),
+      });
+      pool.save((err: any) => {
+        if (err) {
+          console.log(err);
+          res.status(500).send(err);
+        } else {
+          addrlist.push(account.address);
+          poollist.push(pool);
+          console.log(
+            "New Address Created: ",
+            account.address,
+            " Rank: ",
+            rank
+          );
+        }
+        if (i === num - 1) {
+          addAddressWebhook(addrlist)
+            .then(() => {
+              res.send(poollist);
+            })
+            .catch((e) => {
+              console.log(e);
+              res.status(500).send(e);
+            });
+        }
+      });
+    }
+  } else {
+    res.sendStatus(403);
+  }
+});
 
 coreRouter.post("/withdraw", async (req, res) => {
   if (verifySignature(req)) {

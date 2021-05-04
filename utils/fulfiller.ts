@@ -1,8 +1,10 @@
 import Listing from "../models/listing";
+import Pool from "../models/pool";
 import User from "../models/user";
 import axios from "axios";
 import { response } from "express";
 import { handleSign } from "./identity";
+import { decryptAddress } from "./functions";
 const EthereumTx = require("ethereumjs-tx").Transaction;
 
 const logger = require("./logger");
@@ -10,22 +12,21 @@ import * as config from "./config";
 const Web3 = require("web3");
 const web3 = new Web3(new Web3.providers.HttpProvider(config.HttpProvider));
 const swapfee = 0.02;
-const escrowWallet = web3.eth.accounts.privateKeyToAccount(
-  "0x" + config.WALLET_SECRET
-);
 
 console.log(config);
 
 const sendEth = (
-  ethereumaddress: string,
+  priv_key: string,
+  from_address: string,
+  to_address: string,
   value: number,
   nonce: number,
   gasprice: number,
   fee: number
 ) => {
   let rawTx = {
-    to: ethereumaddress,
-    from: escrowWallet.address,
+    to: to_address,
+    from: from_address,
     value: web3.utils.toHex(
       web3.utils.toWei(
         (value - value * fee - (21000 * gasprice) / 1e9).toString()
@@ -35,11 +36,11 @@ const sendEth = (
     gasPrice: web3.utils.toHex(web3.utils.toWei(gasprice.toString(), "gwei")),
     nonce: web3.utils.toHex(nonce),
   };
-  console.log(rawTx, escrowWallet, gasprice, nonce);
+  console.log(rawTx, gasprice, nonce);
   const transaction = new EthereumTx(rawTx, {
     chain: config.NETWORK,
   });
-  transaction.sign(web3.utils.hexToBytes(escrowWallet.privateKey));
+  transaction.sign(web3.utils.hexToBytes(priv_key));
   const serializedTransaction = transaction.serialize();
 
   return web3.eth.sendSignedTransaction(
@@ -94,16 +95,16 @@ const submitTransaction = async (txnhex: string) => {
 };
 
 const process = async (listing_id: string) => {
+  const listing = await Listing.findOne({ _id: listing_id }).exec();
+  const pool = await Pool.findById(listing!.pool).exec();
   const gas = await axios.get(
     `https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${config.ETHERSCAN_KEY}`
   );
-  const nonce = await web3.eth.getTransactionCount(
-    escrowWallet.address,
-    "pending"
-  );
+  const nonce = await web3.eth.getTransactionCount(pool!.address, "pending");
   console.log(gas, nonce);
-  const listing = await Listing.findOne({ _id: listing_id }).exec();
-  if (listing) {
+
+  if (listing && pool) {
+    let key = decryptAddress(pool.privateKey);
     const buyer = await User.findOne({ _id: listing.buyer }).exec();
     const seller = await User.findOne({ _id: listing.seller }).exec();
     let sendaddress = listing.ethaddress
@@ -114,6 +115,8 @@ const process = async (listing_id: string) => {
     console.log(sendaddress);
     if (buyer && seller && sendaddress) {
       sendEth(
+        key,
+        pool.address,
         sendaddress,
         listing.etheramount,
         nonce,

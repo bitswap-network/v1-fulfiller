@@ -12,3 +12,7 @@ export let AlchemyAuth = process.env.ALCHEMY_AUTH;
 export let ServerAuth = process.env.SERVER_AUTH;
 export let NETWORK = process.env.NETWORK;
 export let ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
+export let ADDRESS_ENCRYPT_PRIVATEKEY = process.env.ADDRESS_ENCRYPT_PRIVATEKEY
+  ? process.env.ADDRESS_ENCRYPT_PRIVATEKEY
+  : "";
+export let WEBHOOK_ID = 148926;
