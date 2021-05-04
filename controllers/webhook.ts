@@ -55,7 +55,7 @@ webhookRouter.post("/retry", async (req, res) => {
       res.sendStatus(204);
     } catch (error) {
       console.log(error);
-      res.sendStatus(error);
+      res.status(500).send(error.message);
     }
   }
 });

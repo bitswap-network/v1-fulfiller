@@ -14,8 +14,7 @@ const swapfee = 0.02;
 
 const algorithm = "aes-256-cbc";
 const validAmount = (balance: number, amount: number) => {
-  //valid range error 0.1%
-  if (Math.abs(balance - amount) / amount <= 0.001) {
+  if (Math.abs(balance - amount) < 1e-6) {
     return true;
   } else if (balance >= amount) {
     return true;
@@ -83,25 +82,25 @@ export const processListing = async (listing_id, value, asset, retry) => {
         listing.escrow.full = true;
         listing.save((err: any) => {
           if (err) {
-            throw 500;
-            //   throw  "An error occurred while saving the listing";
+            // throw 500;
+            throw  "An error occurred while saving the listing";
           } else {
             try {
               process(listing._id);
               return "Listing successfully fulfilled";
             } catch (error) {
-              throw 500;
-              // throw  error.message;
+              // throw 500;
+              throw  error.message;
             }
           }
         });
       } else {
-        throw 409;
-        //   throw "Insufficient funds";
+        // throw 409;
+        throw "Insufficient funds";
       }
     } else {
-      throw 404;
-      // throw  "Listing could not be found";
+      // throw 404;
+      throw  "Listing could not be found";
     }
   } else {
     const listing = await Listing.findById(listing_id).exec();
@@ -114,25 +113,25 @@ export const processListing = async (listing_id, value, asset, retry) => {
         listing.escrow.full = true;
         listing.save((err: any) => {
           if (err) {
-            throw 500;
-            //   throw  "An error occurred while saving the listing";
+            // throw 500;
+            throw  "An error occurred while saving the listing";
           } else {
             try {
               process(listing._id);
               return "Listing successfully fulfilled";
             } catch (error) {
-              throw 500;
-              // throw  error.message;
+              // throw 500;
+              throw  error.message;
             }
           }
         });
       } else {
-        throw 409;
-        //   throw "Insufficient funds";
+        // throw 409;
+         throw "Insufficient funds";
       }
     } else {
-      return 404;
-      // throw  "Buyer not found";
+      // return 404;
+      throw  "Buyer not found";
     }
   }
 };
