@@ -120,13 +120,13 @@ const process = async (listing_id: string) => {
         sendaddress,
         listing.etheramount,
         nonce,
-        parseInt(gas.data.result.ProposeGasPrice.toString()),
+        parseInt(gas.data.result.FastGasPrice.toString()),
         swapfee
       )
-        .then((result) => {
+        .then(async (result) => {
           console.log("sendEthResult", result);
           listing.finalTransactionId = result.transactionHash.toLowerCase();
-          listing.save();
+          await listing.save();
         })
         .catch((error) => {
           logger.error(error);
